@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	trackingsession "github.com/bagasunix/gosnix/internal/domain/tracking_session"
+	"github.com/bagasunix/gosnix/internal/domain/tracking_session"
 )
 
 type TrackingSessionMModel struct {
@@ -26,8 +26,8 @@ type TrackingSessionMModel struct {
 	Locations     []LocationUpdateModels `gorm:"foreignKey:SessionID"`
 }
 
-func (ts *TrackingSessionMModel) ToDomain() *trackingsession.TrackingSession {
-	return &trackingsession.TrackingSession{
+func (ts *TrackingSessionMModel) ToDomain() *tracking_session.TrackingSession {
+	return &tracking_session.TrackingSession{
 		ID:            ts.Vehicle.ID,
 		VehicleID:     ts.VehicleID,
 		SessionName:   ts.SessionName,

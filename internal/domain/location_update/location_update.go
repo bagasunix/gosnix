@@ -1,4 +1,4 @@
-package locationupdate
+package location_update
 
 import (
 	"time"

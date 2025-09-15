@@ -1,4 +1,4 @@
-package trackingsession
+package tracking_session
 
 import (
 	"time"

@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	vehiclecategory "github.com/bagasunix/gosnix/internal/domain/vehicle_category"
+	"github.com/bagasunix/gosnix/internal/domain/vehicle_category"
 )
 
 type VehicleCategoryModel struct {
@@ -19,8 +19,8 @@ type VehicleCategoryModel struct {
 	Vehicles []VehicleModel `gorm:"foreignKey:CategoryID"`
 }
 
-func (vc *VehicleCategoryModel) ToDomain() *vehiclecategory.VehicleCategory {
-	return &vehiclecategory.VehicleCategory{
+func (vc *VehicleCategoryModel) ToDomain() *vehicle_category.VehicleCategory {
+	return &vehicle_category.VehicleCategory{
 		ID:          vc.ID,
 		Name:        vc.Name,
 		Description: vc.Description,

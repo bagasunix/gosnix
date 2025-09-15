@@ -1,4 +1,4 @@
-package vehiclecategory
+package vehicle_category
 
 import (
 	"time"
