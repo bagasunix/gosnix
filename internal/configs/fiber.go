@@ -8,7 +8,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/redis/go-redis/v9"
-	// ini wajib, sesuaikan dengan nama module di go.mod kamu
 )
 
 func InitFiber(ctx context.Context, cfg *Cfg, redis *redis.Client) *fiber.App {
@@ -26,12 +25,6 @@ func InitFiber(ctx context.Context, cfg *Cfg, redis *redis.Client) *fiber.App {
 	app.Use(recover.New())
 	app.Use(favicon.New())
 	// app.Use(middlewares.HybridRateLimiter(redis, cfg))
-
-	// route swagger UI
-	app.Use("/swagger", func(c *fiber.Ctx) error {
-		c.Set("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval'")
-		return c.Next()
-	})
 
 	return app
 }

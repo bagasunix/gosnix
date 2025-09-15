@@ -1,0 +1,23 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API untuk sistem Gosnix",
+        "title": "Gosnix API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "Developer Support",
+            "email": "support@gosnix.local"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api",
+    "paths": {},
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}
