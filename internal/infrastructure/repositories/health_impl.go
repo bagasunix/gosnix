@@ -8,7 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
-	"github.com/bagasunix/gosnix/internal/domain/health"
+	dHealth "github.com/bagasunix/gosnix/internal/domain/health"
 )
 
 type gormProvider struct {
@@ -18,7 +18,7 @@ type gormProvider struct {
 	rmqconn *amqp091.Connection
 }
 
-func NewHealthRepo(logger *log.Logger, db *gorm.DB, client *redis.Client, rmqconn *amqp091.Connection) health.Repository {
+func NewHealthRepo(logger *log.Logger, db *gorm.DB, client *redis.Client, rmqconn *amqp091.Connection) dHealth.Repository {
 	g := new(gormProvider)
 	g.db = db
 	g.logger = logger
