@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
 
-	// _ "github.com/bagasunix/gosnix/docs"
+	_ "github.com/bagasunix/gosnix/docs"
 	"github.com/bagasunix/gosnix/internal/infrastructure/http/handlers"
 )
 
