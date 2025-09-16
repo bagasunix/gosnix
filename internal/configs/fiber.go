@@ -8,9 +8,12 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/bagasunix/gosnix/internal/infrastructure/middlewares"
+	"github.com/bagasunix/gosnix/pkg/configs"
 )
 
-func InitFiber(ctx context.Context, cfg *Cfg, redis *redis.Client) *fiber.App {
+func InitFiber(ctx context.Context, cfg *configs.Cfg, redis *redis.Client) *fiber.App {
 	app := fiber.New(fiber.Config{
 		AppName: cfg.App.Name,
 	})
@@ -24,7 +27,7 @@ func InitFiber(ctx context.Context, cfg *Cfg, redis *redis.Client) *fiber.App {
 	app.Use(helmet.New())
 	app.Use(recover.New())
 	app.Use(favicon.New())
-	// app.Use(middlewares.HybridRateLimiter(redis, cfg))
+	app.Use(middlewares.Limitter(redis, cfg))
 
 	return app
 }

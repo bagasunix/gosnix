@@ -14,18 +14,37 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bagasunix/gosnix/internal/infrastructure/http/handlers"
-	"github.com/bagasunix/gosnix/internal/infrastructure/repositories"
+	"github.com/bagasunix/gosnix/internal/infrastructure/messaging/rabbitmq"
+	"github.com/bagasunix/gosnix/internal/infrastructure/persistence/postgres"
+	redis2 "github.com/bagasunix/gosnix/internal/infrastructure/persistence/redis_client"
+	"github.com/bagasunix/gosnix/pkg/configs"
 )
 
 // Injectors from wire.go:
 
-func InitializeHealthHandler(db *gorm.DB, redisClient *redis.Client, rabbitConn *amqp091.Connection, logger *log.Logger) *handlers.HealthHandler {
-	repository := repositories.NewHealthRepo(logger, db, redisClient, rabbitConn)
-	service := NewHealthService(repository)
-	healthHandler := handlers.NewHealthHandler(service)
-	return healthHandler
+// Entry point buat bikin semua handler
+func InitializeServiceHandler(db *gorm.DB, redisClient *redis.Client, rabbitConn *amqp091.Connection, logger *log.Logger, cfg *configs.Cfg) *HandlerContainer {
+	repositories := postgres.New(logger, db)
+	redisRedisClient := redis2.New(logger, redisClient)
+	rmqClient := rabbitmq.New(logger, rabbitConn)
+	serviceHealthService := NewHealthService(repositories, redisRedisClient, rmqClient)
+	healthHandler := handlers.NewHealthHandler(serviceHealthService)
+	serviceCustomerService := NewCustomerService(logger, db, repositories, redisClient, cfg)
+	customerHandler := handlers.NewCustomerHandler(serviceCustomerService)
+	handlerContainer := &HandlerContainer{
+		Health:   healthHandler,
+		Customer: customerHandler,
+	}
+	return handlerContainer
 }
 
 // wire.go:
 
-var HealthSets = wire.NewSet(repositories.NewHealthRepo, NewHealthService, handlers.NewHealthHandler)
+type HandlerContainer struct {
+	Health   *handlers.HealthHandler
+	Customer *handlers.CustomerHandler
+}
+
+var HealthSet = wire.NewSet(postgres.New, redis2.New, rabbitmq.New, NewHealthService,
+	NewCustomerService, handlers.NewHealthHandler, handlers.NewCustomerHandler,
+)

@@ -9,11 +9,12 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/streadway/amqp"
 
+	"github.com/bagasunix/gosnix/pkg/configs"
 	"github.com/bagasunix/gosnix/pkg/errors"
 	"github.com/bagasunix/gosnix/pkg/utils"
 )
 
-func InitRabbitMQ(ctx context.Context, cfg *Cfg, logger *log.Logger) *amqp091.Connection {
+func InitRabbitMQ(ctx context.Context, cfg *configs.Cfg, logger *log.Logger) *amqp091.Connection {
 	CfgBuild := &utils.DBConfig{
 		Driver:   cfg.RabbitMQ.Driver,
 		Host:     cfg.RabbitMQ.Host,

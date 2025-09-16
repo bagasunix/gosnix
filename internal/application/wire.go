@@ -1,7 +1,8 @@
-// internal/configs/infrastructure_wire.go
 //go:build wireinject
 // +build wireinject
 
+// internal/appliaction/appliaction_wire.go
+// go:build wireinject
 package application
 
 import (
@@ -12,27 +13,43 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bagasunix/gosnix/internal/infrastructure/http/handlers"
-	"github.com/bagasunix/gosnix/internal/infrastructure/repositories"
+	"github.com/bagasunix/gosnix/internal/infrastructure/messaging/rabbitmq"
+	"github.com/bagasunix/gosnix/internal/infrastructure/persistence/postgres"
+	redisC "github.com/bagasunix/gosnix/internal/infrastructure/persistence/redis_client"
+	"github.com/bagasunix/gosnix/pkg/configs"
 )
 
-func InitializeHealthHandler(
+type HandlerContainer struct {
+	Health   *handlers.HealthHandler
+	Customer *handlers.CustomerHandler
+}
+
+// Entry point buat bikin semua handler
+func InitializeServiceHandler(
 	db *gorm.DB,
 	redisClient *redis.Client,
 	rabbitConn *amqp091.Connection,
 	logger *log.Logger,
-) *handlers.HealthHandler {
-	panic(wire.Build(
-		// Repositories
-		repositories.NewHealthRepo,
-		// Services
-		NewHealthService,
-		// Handlers
-		handlers.NewHealthHandler,
-	))
+	cfg *configs.Cfg,
+) *HandlerContainer {
+	wire.Build(
+		HealthSet,
+		wire.Struct(new(HandlerContainer), "*"), // <- otomatis isi struct
+	)
+	return nil
 }
 
-var HealthSets = wire.NewSet(
-	repositories.NewHealthRepo,
+var HealthSet = wire.NewSet(
+	// Infrastructure
+	postgres.New,
+	redisC.New,
+	rabbitmq.New,
+
+	// Services
 	NewHealthService,
+	NewCustomerService,
+
+	// Handlers
 	handlers.NewHealthHandler,
+	handlers.NewCustomerHandler,
 )

@@ -6,19 +6,25 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/bagasunix/gosnix/internal/domain/health"
+	"github.com/bagasunix/gosnix/internal/domain/service"
+	"github.com/bagasunix/gosnix/internal/infrastructure/dtos/responses"
+	"github.com/bagasunix/gosnix/internal/infrastructure/messaging/rabbitmq"
+	"github.com/bagasunix/gosnix/internal/infrastructure/persistence/postgres"
+	redis "github.com/bagasunix/gosnix/internal/infrastructure/persistence/redis_client"
 )
 
 type healthService struct {
-	repo health.Repository
+	postgres    postgres.Repositories
+	redisClient redis.RedisClient
+	rmq         rabbitmq.RmqClient
 }
 
-func NewHealthService(repo health.Repository) health.Service {
-	return &healthService{repo: repo}
+func NewHealthService(postgres postgres.Repositories, redisClient redis.RedisClient, rmq rabbitmq.RmqClient) service.HealthService {
+	return &healthService{postgres: postgres, redisClient: redisClient, rmq: rmq}
 }
 
-func (s *healthService) GetHealthStatus(ctx context.Context) (*health.HealthCheckResponse, error) {
-	response := &health.HealthCheckResponse{
+func (s *healthService) GetHealthStatus(ctx context.Context) (*responses.HealthCheckResponse, error) {
+	response := &responses.HealthCheckResponse{
 		Status:    "healthy",
 		Version:   "1.0.0",
 		Timestamp: time.Now().Unix(),
@@ -31,7 +37,7 @@ func (s *healthService) GetHealthStatus(ctx context.Context) (*health.HealthChec
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		if err := s.repo.CheckDB(ctx); err != nil {
+		if err := s.postgres.GetHealth().CheckDB(ctx); err != nil {
 			unhealthy = true
 			response.Database = err.Error()
 		} else {
@@ -41,7 +47,7 @@ func (s *healthService) GetHealthStatus(ctx context.Context) (*health.HealthChec
 	})
 
 	g.Go(func() error {
-		if err := s.repo.CheckRedis(ctx); err != nil {
+		if err := s.redisClient.GetHealth().CheckRedis(ctx); err != nil {
 			unhealthy = true
 			response.Redis = err.Error()
 		} else {
@@ -51,7 +57,7 @@ func (s *healthService) GetHealthStatus(ctx context.Context) (*health.HealthChec
 	})
 
 	g.Go(func() error {
-		if err := s.repo.CheckRabbitMQ(ctx); err != nil {
+		if err := s.rmq.GetHealth().CheckRabbitMQ(ctx); err != nil {
 			unhealthy = true
 			response.RabbitMQ = err.Error()
 		} else {

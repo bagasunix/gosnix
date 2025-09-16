@@ -7,7 +7,7 @@ import (
 	"github.com/bagasunix/gosnix/internal/infrastructure/dtos/responses"
 )
 
-type CustomerUsecase interface {
+type CustomerService interface {
 	Create(ctx context.Context, request *requests.CreateCustomer) (response responses.BaseResponse[responses.CustomerResponse])
 	ListCustomer(ctx context.Context, request *requests.BaseRequest) (response responses.BaseResponse[[]responses.CustomerResponse])
 	ViewCustomer(ctx context.Context, request *requests.EntityId) (response responses.BaseResponse[*responses.CustomerResponse])

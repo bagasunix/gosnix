@@ -14,10 +14,13 @@ import (
 	amqp091 "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+
+	"github.com/bagasunix/gosnix/pkg/configs"
 )
 
 // Container untuk semua configs
 type Configs struct {
+	Cfg         *configs.Cfg
 	DB          *gorm.DB
 	RedisClient *redis.Client
 	RabbitConn  *amqp091.Connection
@@ -26,6 +29,7 @@ type Configs struct {
 }
 
 var ConfigSet = wire.NewSet(
+	configs.InitConfig,
 	InitLogger,
 	InitDB,
 	InitRedis,
@@ -34,6 +38,6 @@ var ConfigSet = wire.NewSet(
 	wire.Struct(new(Configs), "*"), // inject semua dependency ke struct Configs
 )
 
-func InitializeConfigs(ctx context.Context, cfg *Cfg) *Configs {
+func InitializeConfigs(ctx context.Context) *Configs {
 	panic(wire.Build(ConfigSet))
 }

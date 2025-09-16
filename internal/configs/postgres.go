@@ -16,11 +16,12 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
 
+	"github.com/bagasunix/gosnix/pkg/configs"
 	"github.com/bagasunix/gosnix/pkg/errors"
 	"github.com/bagasunix/gosnix/pkg/utils"
 )
 
-func InitDB(ctx context.Context, cfg *Cfg, logger *log.Logger) *gorm.DB {
+func InitDB(ctx context.Context, cfg *configs.Cfg, logger *log.Logger) *gorm.DB {
 	CfgBuild := &utils.DBConfig{
 		Driver:          cfg.Database.Driver,
 		Host:            cfg.Database.Host,

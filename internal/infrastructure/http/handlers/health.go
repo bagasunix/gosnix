@@ -3,14 +3,14 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/bagasunix/gosnix/internal/domain/health"
+	"github.com/bagasunix/gosnix/internal/domain/service"
 )
 
 type HealthHandler struct {
-	service health.Service
+	service service.HealthService
 }
 
-func NewHealthHandler(service health.Service) *HealthHandler {
+func NewHealthHandler(service service.HealthService) *HealthHandler {
 	return &HealthHandler{service: service}
 }
 

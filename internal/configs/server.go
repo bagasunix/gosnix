@@ -19,21 +19,20 @@ func Run() {
 	defer cancel()
 
 	// Load config & initialize dependencies
-	cfg := InitConfig(ctx)
-	container := InitializeConfigs(ctx, cfg)
+	container := InitializeConfigs(ctx)
 
 	// Pastikan resource ditutup saat shutdown
 	defer closeResources(container)
 
 	// Initialize handler & setup routes
-	healthHandler := application.InitializeHealthHandler(container.DB, container.RedisClient, container.RabbitConn, container.Logger)
-	httpRouter.SetupRoutes(container.FiberApp, healthHandler)
+	serviceHandler := application.InitializeServiceHandler(container.DB, container.RedisClient, container.RabbitConn, container.Logger, container.Cfg)
+	httpRouter.SetupRoutes(container.FiberApp, serviceHandler.Health, serviceHandler.Customer)
 
 	// Channel untuk menangani error atau signal
 	errs := make(chan error, 1)
 
 	// Start server & signal listener
-	go runHTTP(container, cfg.Server.Port, errs)
+	go runHTTP(container, container.Cfg.Server.Port, errs)
 	go listenSignal(errs)
 
 	// Tunggu error / signal

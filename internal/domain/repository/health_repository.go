@@ -1,4 +1,4 @@
-package health
+package repository
 
 import "context"
 
@@ -15,7 +15,7 @@ type RabbitMQRepository interface {
 }
 
 // Composite interface yang menggabungkan semua repository
-type Repository interface {
+type HealthRepository interface {
 	PostgresRepository
 	RedisRepository
 	RabbitMQRepository

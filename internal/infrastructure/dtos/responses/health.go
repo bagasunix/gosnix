@@ -1,9 +1,4 @@
-package health
-
-type Health struct {
-	Status  string
-	Version string
-}
+package responses
 
 type HealthCheckResponse struct {
 	Status    string            `json:"status"`

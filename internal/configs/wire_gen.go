@@ -8,6 +8,7 @@ package configs
 
 import (
 	"context"
+	"github.com/bagasunix/gosnix/pkg/configs"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/wire"
 	"github.com/phuslu/log"
@@ -23,26 +24,29 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeConfigs(ctx context.Context, cfg *Cfg) *Configs {
+func InitializeConfigs(ctx context.Context) *Configs {
+	cfg := configs.InitConfig(ctx)
 	logger := InitLogger(cfg)
 	db := InitDB(ctx, cfg, logger)
 	client := InitRedis(ctx, logger, cfg)
 	connection := InitRabbitMQ(ctx, cfg, logger)
 	app := InitFiber(ctx, cfg, client)
-	configs := &Configs{
+	configsConfigs := &Configs{
+		Cfg:         cfg,
 		DB:          db,
 		RedisClient: client,
 		RabbitConn:  connection,
 		Logger:      logger,
 		FiberApp:    app,
 	}
-	return configs
+	return configsConfigs
 }
 
 // wire.go:
 
 // Container untuk semua configs
 type Configs struct {
+	Cfg         *configs.Cfg
 	DB          *gorm.DB
 	RedisClient *redis.Client
 	RabbitConn  *amqp091.Connection
@@ -50,8 +54,7 @@ type Configs struct {
 	FiberApp    *fiber.App
 }
 
-var ConfigSet = wire.NewSet(
-	InitLogger,
+var ConfigSet = wire.NewSet(configs.InitConfig, InitLogger,
 	InitDB,
 	InitRedis,
 	InitRabbitMQ,

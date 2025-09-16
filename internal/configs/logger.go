@@ -5,9 +5,11 @@ import (
 	"time"
 
 	"github.com/phuslu/log"
+
+	"github.com/bagasunix/gosnix/pkg/configs"
 )
 
-func InitLogger(cfg *Cfg) *log.Logger {
+func InitLogger(cfg *configs.Cfg) *log.Logger {
 	logger := &log.Logger{
 		// Level:      log.DebugLevel, // Set log level sesuai kebutuhan
 		Caller:     1,            // Untuk menampilkan informasi caller

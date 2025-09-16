@@ -6,6 +6,6 @@ import (
 	"github.com/bagasunix/gosnix/internal/infrastructure/http/handlers"
 )
 
-func SetupHealthRoutes(router fiber.Router, handler *handlers.HealthHandler) {
-	router.Get("health", handler.CheckHealth)
+func SetupCustomerRoutes(router fiber.Router, handler *handlers.CustomerHandler) {
+	router.Get("/:id", handler.ViewCustomer)
 }
