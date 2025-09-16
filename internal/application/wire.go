@@ -22,6 +22,7 @@ import (
 type HandlerContainer struct {
 	Health   *handlers.HealthHandler
 	Customer *handlers.CustomerHandler
+	Repo     postgres.Repositories
 }
 
 // Entry point buat bikin semua handler

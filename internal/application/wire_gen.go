@@ -7,17 +7,16 @@
 package application
 
 import (
-	"github.com/google/wire"
-	"github.com/phuslu/log"
-	"github.com/rabbitmq/amqp091-go"
-	"github.com/redis/go-redis/v9"
-	"gorm.io/gorm"
-
 	"github.com/bagasunix/gosnix/internal/infrastructure/http/handlers"
 	"github.com/bagasunix/gosnix/internal/infrastructure/messaging/rabbitmq"
 	"github.com/bagasunix/gosnix/internal/infrastructure/persistence/postgres"
 	redis2 "github.com/bagasunix/gosnix/internal/infrastructure/persistence/redis_client"
 	"github.com/bagasunix/gosnix/pkg/configs"
+	"github.com/google/wire"
+	"github.com/phuslu/log"
+	"github.com/rabbitmq/amqp091-go"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 // Injectors from wire.go:
@@ -34,6 +33,7 @@ func InitializeServiceHandler(db *gorm.DB, redisClient *redis.Client, rabbitConn
 	handlerContainer := &HandlerContainer{
 		Health:   healthHandler,
 		Customer: customerHandler,
+		Repo:     repositories,
 	}
 	return handlerContainer
 }
@@ -43,6 +43,7 @@ func InitializeServiceHandler(db *gorm.DB, redisClient *redis.Client, rabbitConn
 type HandlerContainer struct {
 	Health   *handlers.HealthHandler
 	Customer *handlers.CustomerHandler
+	Repo     postgres.Repositories
 }
 
 var HealthSet = wire.NewSet(postgres.New, redis2.New, rabbitmq.New, NewHealthService,

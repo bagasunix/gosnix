@@ -30,7 +30,7 @@ func InitializeConfigs(ctx context.Context) *Configs {
 	db := InitDB(ctx, cfg, logger)
 	client := InitRedis(ctx, logger, cfg)
 	connection := InitRabbitMQ(ctx, cfg, logger)
-	app := InitFiber(ctx, cfg, client)
+	app := InitFiber(ctx, cfg, client, logger)
 	configsConfigs := &Configs{
 		Cfg:         cfg,
 		DB:          db,
