@@ -1,12 +1,11 @@
-package customer
+package entities
 
 import (
 	"time"
 )
 
 type Customer struct {
-	ID int `gorm:"primaryKey;autoIncrement"`
-	// MerchantID uuid.UUID  `gorm:"type:uuid;not null"`
+	ID        int        `gorm:"primaryKey;autoIncrement"`
 	Name      string     `gorm:"size:255;not null"`
 	Email     string     `gorm:"size:255;not null"`
 	Phone     string     `gorm:"size:14"`
@@ -16,6 +15,8 @@ type Customer struct {
 	CreatedAt time.Time  `gorm:"autoCreateTime"`
 	UpdatedAt time.Time  `gorm:"autoUpdateTime"`
 	DeletedAt *time.Time `gorm:"index"`
+
+	Vehicles []*Vehicle `gorm:"foreignKey:CreatedBy"`
 }
 
 func (Customer) TableName() string {

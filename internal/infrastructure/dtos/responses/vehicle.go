@@ -6,7 +6,7 @@ type VehicleResponse struct {
 	Model    string
 	Brand    string
 	Color    string
-	Year     int
+	Year     string
 	MaxSpeed int    `json:"max_speed"`
 	FuelType string `json:"fuel_type"`
 	IsActive int    `json:"is_active"`

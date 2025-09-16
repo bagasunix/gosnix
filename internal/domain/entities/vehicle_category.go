@@ -1,4 +1,4 @@
-package vehicle_category
+package entities
 
 import (
 	"time"
@@ -13,6 +13,8 @@ type VehicleCategory struct {
 	CreatedAt   time.Time  `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time  `gorm:"autoUpdateTime"`
 	DeletedAt   *time.Time `gorm:"index"`
+
+	Vehicles []Vehicle `gorm:"foreignKey:CategoryID"`
 }
 
 func (VehicleCategory) TableName() string {

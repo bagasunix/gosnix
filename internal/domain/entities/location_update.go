@@ -1,4 +1,4 @@
-package location_update
+package entities
 
 import (
 	"time"
@@ -13,6 +13,9 @@ type LocationUpdate struct {
 	Latitude   float64   `gorm:"type:decimal(10,8);not null"`
 	Longitude  float64   `gorm:"type:decimal(11,8);not null"`
 	ReceivedAt time.Time `gorm:"autoCreateTime"`
+
+	Vehicle Vehicle         `gorm:"foreignKey:VehicleID"`
+	Session TrackingSession `gorm:"foreignKey:SessionID"`
 }
 
 func (LocationUpdate) TableName() string {

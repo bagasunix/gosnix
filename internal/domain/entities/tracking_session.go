@@ -1,4 +1,4 @@
-package tracking_session
+package entities
 
 import (
 	"time"
@@ -18,6 +18,10 @@ type TrackingSession struct {
 	CreatedBy     int
 	CreatedAt     time.Time `gorm:"autoCreateTime"`
 	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
+
+	Vehicle       Vehicle          `gorm:"foreignKey:VehicleID"`
+	CreatedByUser Customer         `gorm:"foreignKey:CreatedBy"`
+	Locations     []LocationUpdate `gorm:"foreignKey:SessionID"`
 }
 
 func (TrackingSession) TableName() string {

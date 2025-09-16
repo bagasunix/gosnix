@@ -1,4 +1,4 @@
-package vehicle
+package entities
 
 import (
 	"time"
@@ -12,7 +12,8 @@ type Vehicle struct {
 	// MerchantID     uuid.UUID `gorm:"type:uuid;not null"`
 	PlateNo        string  `gorm:"uniqueIndex;size:20"`
 	Model          string  `gorm:"size:100"`
-	Years          string  `gorm:"size:10"`
+	Brand          string  `gorm:"size:100"`
+	Year           string  `gorm:"size:10"`
 	Color          string  `gorm:"size:50"`
 	VIN            string  `gorm:"size:50"`
 	DeviceID       string  `gorm:"uniqueIndex;size:100"`
@@ -25,6 +26,12 @@ type Vehicle struct {
 	CreatedAt      time.Time  `gorm:"autoCreateTime"`
 	UpdatedAt      time.Time  `gorm:"autoUpdateTime"`
 	DeletedAt      *time.Time `gorm:"index"`
+
+	Category VehicleCategory `gorm:"foreignKey:CategoryID"`
+	// Merchant          Merchant          `gorm:"foreignKey:MerchantID"`
+	CreatedByCustomer Customer          `gorm:"foreignKey:CreatedBy"`
+	Sessions          []TrackingSession `gorm:"foreignKey:VehicleID"`
+	Locations         []LocationUpdate  `gorm:"foreignKey:VehicleID"`
 }
 
 func (Vehicle) TableName() string {
