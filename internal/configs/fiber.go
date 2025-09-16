@@ -15,9 +15,13 @@ import (
 )
 
 func InitFiber(ctx context.Context, cfg *configs.Cfg, redis *redis.Client, logger *log.Logger) *fiber.App {
-	app := fiber.New(fiber.Config{
-		AppName: cfg.App.Name,
+	var app = fiber.New(fiber.Config{
+		AppName:      cfg.App.Name,
+		UnescapePath: true,
+		ErrorHandler: middlewares.NewErrorHandler(logger),
+		// EnablePrintRoutes: true,
 	})
+
 	app.Use(func(c *fiber.Ctx) error {
 		c.Set("Content-Security-Policy", "default-src 'self'")
 		c.Set("Access-Control-Allow-Origin", "*")
@@ -25,11 +29,11 @@ func InitFiber(ctx context.Context, cfg *configs.Cfg, redis *redis.Client, logge
 		c.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		return c.Next()
 	})
-	app.Use(middlewares.LoggingMiddleware(logger))
 	app.Use(helmet.New())
 	app.Use(recover.New())
 	app.Use(favicon.New())
 	app.Use(middlewares.Limitter(redis, cfg))
+	app.Use(middlewares.LoggingMiddleware(logger))
 
 	return app
 }

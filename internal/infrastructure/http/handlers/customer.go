@@ -33,6 +33,7 @@ func NewCustomerHandler(service service.CustomerService) *CustomerHandler {
 func (c *CustomerHandler) ViewCustomer(ctx *fiber.Ctx) error {
 	request := new(requests.EntityId)
 	var response responses.BaseResponse[*responses.CustomerResponse]
+	panic(1)
 
 	id := ctx.Params("id")
 	if id == "" {

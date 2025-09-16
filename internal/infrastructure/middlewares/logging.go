@@ -1,33 +1,44 @@
 package middlewares
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/phuslu/log"
 )
 
-// Middleware generator
 func LoggingMiddleware(logger *log.Logger) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
-
-		// jalankan handler berikutnya
 		err := c.Next()
 
 		// ambil response body
 		resBody := string(c.Response().Body())
+		status := c.Response().StatusCode()
+		// jika body kosong, jangan log, biarkan ErrorHandler menangani
+		if len(resBody) == 0 {
+			return err
+		}
+		if strings.Contains(c.OriginalURL(), "swagger") {
+			resBody = "Swagger Config"
+		}
 
-		// log ke console
-		logger.Info().
+		// pilih level log berdasarkan status code
+		entry := logger.Info()
+		if status >= 400 && status < 500 {
+			entry = logger.Warn()
+		} else if status >= 500 {
+			entry = logger.Error()
+		}
+
+		entry.
 			Str("method", c.Method()).
 			Str("endpoint", c.OriginalURL()).
-			Int("status", c.Response().StatusCode()).
+			Int("status", status).
 			Str("user_agent", c.Get("User-Agent")).
 			Str("ip_address", c.IP()).
-			Dur("duration", time.Since(start)).
-			Msg(resBody)
-
+			Dur("duration", time.Since(start)).Msg(resBody)
 		return err
 	}
 }
