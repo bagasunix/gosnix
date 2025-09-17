@@ -2,9 +2,8 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"time"
-
-	"golang.org/x/sync/errgroup"
 
 	"github.com/bagasunix/gosnix/internal/domain/service"
 	"github.com/bagasunix/gosnix/internal/infrastructure/dtos/responses"
@@ -31,43 +30,72 @@ func (s *healthService) GetHealthStatus(ctx context.Context) (*responses.HealthC
 		Details:   make(map[string]string),
 	}
 
-	var unhealthy bool
+	type checkResult struct {
+		name  string
+		err   error
+		value string
+	}
 
-	// pakai errgroup buat paralel check
-	g, ctx := errgroup.WithContext(ctx)
+	ch := make(chan checkResult, 3) // Buffer channel untuk menghindari goroutine leak
 
-	g.Go(func() error {
-		if err := s.postgres.GetHealth().CheckDB(ctx); err != nil {
-			unhealthy = true
-			response.Database = err.Error()
-		} else {
-			response.Database = "connected"
+	// Check Database
+	go func() {
+		err := s.postgres.GetHealth().CheckDB(ctx)
+		val := "connected"
+		if err != nil {
+			val = err.Error()
 		}
-		return nil
-	})
+		ch <- checkResult{name: "Database", err: err, value: val}
+	}()
 
-	g.Go(func() error {
-		if err := s.redisClient.GetHealth().CheckRedis(ctx); err != nil {
-			unhealthy = true
-			response.Redis = err.Error()
+	// Check Redis dengan pengecekan nil
+	go func() {
+		var err error
+		var val string = "connected"
+
+		// Pastikan redisClient tidak nil sebelum memanggil GetHealth()
+		if s.redisClient == nil {
+			err = fmt.Errorf("redis client is not initialized")
+			val = err.Error()
+		} else if s.redisClient.GetHealth() == nil {
+			err = fmt.Errorf("redis health checker is not initialized")
+			val = err.Error()
 		} else {
-			response.Redis = "connected"
+			err = s.redisClient.GetHealth().CheckRedis(ctx)
+			if err != nil {
+				val = err.Error()
+			}
 		}
-		return nil
-	})
 
-	g.Go(func() error {
-		if err := s.rmq.GetHealth().CheckRabbitMQ(ctx); err != nil {
+		ch <- checkResult{name: "Redis", err: err, value: val}
+	}()
+
+	// Check RabbitMQ
+	go func() {
+		err := s.rmq.GetHealth().CheckRabbitMQ(ctx)
+		val := "connected"
+		if err != nil {
+			val = err.Error()
+		}
+		ch <- checkResult{name: "RabbitMQ", err: err, value: val}
+	}()
+
+	// Tunggu semua hasil
+	unhealthy := false
+	for i := 0; i < 3; i++ {
+		res := <-ch
+		switch res.name {
+		case "Database":
+			response.Database = res.value
+		case "Redis":
+			response.Redis = res.value
+		case "RabbitMQ":
+			response.RabbitMQ = res.value
+		}
+		if res.err != nil {
 			unhealthy = true
-			response.RabbitMQ = err.Error()
-		} else {
-			response.RabbitMQ = "connected"
 		}
-		return nil
-	})
-
-	// tunggu semua goroutine selesai
-	_ = g.Wait()
+	}
 
 	if unhealthy {
 		response.Status = "unhealthy"

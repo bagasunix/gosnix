@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/phuslu/log"
 	"github.com/redis/go-redis/v9"
@@ -22,5 +23,13 @@ func NewHealthRepo(logger *log.Logger, client *redis.Client) repository.RedisRep
 }
 
 func (g *redisProviderHealth) CheckRedis(ctx context.Context) error {
+	if g == nil {
+		return fmt.Errorf("redis health checker is not initialized")
+	}
+
+	if g.client == nil {
+		return fmt.Errorf("redis client is not initialized")
+	}
+
 	return g.client.Ping(ctx).Err()
 }

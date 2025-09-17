@@ -46,10 +46,23 @@ func Run() {
 // -------------------- Helper Functions --------------------
 
 func closeResources(c *Configs) {
-	sqlDB, _ := c.DB.DB()
-	_ = sqlDB.Close()
-	_ = c.RedisClient.Close()
-	_ = c.RabbitConn.Close()
+	// Tutup DB
+	if c.DB != nil {
+		sqlDB, err := c.DB.DB()
+		if err == nil && sqlDB != nil {
+			_ = sqlDB.Close()
+		}
+	}
+
+	// Tutup Redis
+	if c.RedisClient != nil {
+		_ = c.RedisClient.Close()
+	}
+
+	// Tutup RabbitMQ
+	if c.RabbitConn != nil {
+		_ = c.RabbitConn.Close()
+	}
 }
 
 func runHTTP(app *Configs, port int, errs chan error) {
