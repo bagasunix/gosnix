@@ -1,8 +1,8 @@
-// internal/configs/config_wire.go
-// go:build wireinject
 //go:build wireinject
 // +build wireinject
 
+// internal/configs/config_wire.go
+// go:build wireinject
 package configs
 
 import (

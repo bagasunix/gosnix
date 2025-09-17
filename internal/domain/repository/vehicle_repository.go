@@ -11,10 +11,12 @@ import (
 
 type VehicleCommon interface {
 	Save(ctx context.Context, v *entities.Vehicle) error
-	FindByCustomer(ctx context.Context, customerID uuid.UUID) (result base.SliceResult[[]*entities.Vehicle])
+	SaveBatchTx(ctx context.Context, tx any, m []entities.Vehicle) error
+	FindByCustomer(ctx context.Context, customerID, limit, offset int, search string) (result base.SliceResult[*entities.Vehicle])
 	FindByParam(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.Vehicle])
 	Update(ctx context.Context, v *entities.Vehicle) error
 	Delete(ctx context.Context, id uuid.UUID) error
+	CountVehicle(ctx context.Context, search string) (int, error)
 }
 type VehicleRepository interface {
 	base.Repository

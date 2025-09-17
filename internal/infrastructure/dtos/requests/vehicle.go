@@ -9,7 +9,7 @@ type CreateVehicle struct {
 	Model    string `json:"model"`
 	Brand    string `json:"brand"`
 	Color    string `json:"color"`
-	Year     string `json:"year"`
+	Years    string `json:"year"`
 	MaxSpeed int    `json:"max_speed"`
 	FuelType string `json:"fuel_type"`
 }
@@ -20,7 +20,7 @@ func (v CreateVehicle) Validate() error {
 		validation.Field(&v.Model, validation.Required),
 		validation.Field(&v.Brand, validation.Required),
 		validation.Field(&v.Color, validation.Required),
-		validation.Field(&v.Year, validation.Required),
+		validation.Field(&v.Years, validation.Required),
 		validation.Field(&v.FuelType, validation.Required),
 	)
 }
