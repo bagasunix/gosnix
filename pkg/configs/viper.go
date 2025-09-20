@@ -118,10 +118,6 @@ func LoadCfg(ctx context.Context) (*Cfg, error) {
 	return &config, nil
 }
 
-func (c *Cfg) GetRedisDSN() string {
-	return fmt.Sprintf("%s:%s", c.Redis.Host, c.Redis.Port)
-}
-
 // Fungsi untuk menginisialisasi konfigurasi
 func InitConfig(ctx context.Context) *Cfg {
 	config, err := LoadCfg(ctx)

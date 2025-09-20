@@ -2,24 +2,26 @@ package entities
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Customer struct {
-	ID             int        `gorm:"primaryKey;autoIncrement"`
-	Name           string     `gorm:"size:255;not null"`
-	Sex            int8       `json:"sex" gorm:"column:sex;not null"` // 1=male, 2=female
-	DOB            *string    `json:"dob" gorm:"column:dob;size:10"`
-	Email          string     `gorm:"size:255;not null"`
-	Phone          string     `gorm:"size:14"`
-	Password       string     `gorm:"column:password_hash"`
-	Address        string     `gorm:"size:255"`
-	Photo          string     `json:"photo" gorm:"column:photo;type:text"`
-	CustomerStatus int8       `json:"customer_status" gorm:"column:customer_status;default:0"` // 1=active, 2=suspended, 0=inactive
-	CreatedAt      time.Time  `gorm:"autoCreateTime"`
-	UpdatedAt      time.Time  `gorm:"autoUpdateTime"`
-	DeletedAt      *time.Time `gorm:"index"`
+	ID           int            `gorm:"primaryKey;autoIncrement"`
+	Name         string         `gorm:"size:255;not null"`
+	Sex          int8           `gorm:"size:1;not null"` // Changed from Sex int to Gender string
+	DOB          *time.Time     `gorm:"type:date"`
+	Email        string         `gorm:"size:255;unique;not null"`
+	Phone        string         `gorm:"size:20;unique;not null"`
+	PasswordHash string         `gorm:"size:255;not null"`
+	Address      string         `gorm:"type:text"`
+	Photo        string         `gorm:"type:text"`
+	IsActive     int8           `gorm:"default:0;not null"`
+	CreatedAt    time.Time      `gorm:"autoCreateTime"`
+	UpdatedAt    *time.Time     `gorm:"autoUpdateTime"`
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
 
-	Vehicles []*Vehicle `gorm:"foreignKey:CreatedBy"`
+	Vehicles []Vehicle `gorm:"foreignKey:CustomerID;references:ID"`
 }
 
 func (Customer) TableName() string {

@@ -4,24 +4,26 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"gorm.io/gorm"
 )
 
 type TrackingSession struct {
 	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	VehicleID     uuid.UUID `gorm:"type:uuid;not null"`
-	SessionName   string    `gorm:"size:255"`
-	StartTime     time.Time `gorm:"autoCreateTime"`
+	VehicleID     uuid.UUID `gorm:"type:uuid;not null;index"`
+	SessionName   string    `gorm:"size:255;not null"`
+	StartTime     time.Time `gorm:"not null"`
 	EndTime       *time.Time
-	Status        string  `gorm:"size:50;default:ACTIVE"`
-	TotalDistance float64 `gorm:"type:decimal(10,3)"`
-	TotalDuration int
-	CreatedBy     int
-	CreatedAt     time.Time `gorm:"autoCreateTime"`
-	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
+	Status        string         `gorm:"size:50;default:'ACTIVE';not null"`
+	TotalDistance float64        `gorm:"type:decimal(10,3);default:0.0"`
+	TotalDuration int            `gorm:"default:0"`
+	CreatedBy     int            `gorm:"not null"`
+	CreatedAt     time.Time      `gorm:"autoCreateTime"`
+	UpdatedAt     *time.Time     `gorm:"autoUpdateTime"`
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
 
-	Vehicle       Vehicle          `gorm:"foreignKey:VehicleID"`
-	CreatedByUser Customer         `gorm:"foreignKey:CreatedBy"`
-	Locations     []LocationUpdate `gorm:"foreignKey:SessionID"`
+	Vehicle       Vehicle          `gorm:"foreignKey:VehicleID;references:ID"`
+	CreatedByUser User             `gorm:"foreignKey:CreatedBy;references:ID"`
+	Locations     []LocationUpdate `gorm:"foreignKey:SessionID;references:ID"`
 }
 
 func (TrackingSession) TableName() string {

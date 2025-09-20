@@ -1,13 +1,13 @@
 package responses
 
 type VehicleResponse struct {
-	ID       string `json:"id"`
-	PlateNo  string `json:"plateNo"`
-	Model    string
-	Brand    string
-	Color    string
-	Year     string
-	MaxSpeed int    `json:"max_speed"`
-	FuelType string `json:"fuel_type"`
-	IsActive int    `json:"is_active"`
+	ID              string `json:"id"`
+	PlateNo         string `json:"plateNo"`
+	Model           string
+	Brand           string
+	Color           string
+	ManufactureYear int
+	MaxSpeed        int    `json:"max_speed"`
+	FuelType        string `json:"fuel_type"`
+	IsActive        int    `json:"is_active"`
 }

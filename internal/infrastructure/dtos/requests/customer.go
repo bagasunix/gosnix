@@ -2,20 +2,23 @@ package requests
 
 import (
 	"regexp"
+	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
 )
 
 type CreateCustomer struct {
-	Name     string `json:"name"`
-	Sex      string `json:"sex"`
-	DOB      string `bson:"dob"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Password string `bson:"password"`
-	Address  string `json:"address"`
-	Photo    string `json:"photo"`
+	Name     string     `json:"name"`
+	Sex      string     `json:"sex"`
+	DOB      *time.Time `json:"dob"`
+	Email    string     `json:"email"`
+	Phone    string     `json:"phone"`
+	Password string     `bson:"password"`
+	Address  string     `json:"address"`
+	Photo    string     `json:"photo"`
+
+	DeviceGPS RegistrationGPS `json:"device_gps,omitempty"`
 
 	Vehicle []CreateVehicle `json:"vehicle,omitempty"`
 }

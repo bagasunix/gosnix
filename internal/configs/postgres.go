@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -73,6 +75,13 @@ func NewPostgresDB(ctx context.Context, cfg *utils.DBConfig, migrationPath strin
 func runMigrations(sqlDB *sql.DB, migrationsPath string, logger *log.Logger) {
 	driver, err := migPostgres.WithInstance(sqlDB, &migPostgres.Config{})
 	errors.HandlerWithOSExit(logger, err, "failed to initialize postgres driver")
+
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	migrationsPath = filepath.Join(exPath, migrationsPath)
 
 	m, err := migrate.NewWithDatabaseInstance("file://"+migrationsPath, "postgres", driver)
 	errors.HandlerWithOSExit(logger, err, "failed to create migration instance")

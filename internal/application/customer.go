@@ -64,15 +64,15 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 	intSex, _ := strconv.Atoi(request.Sex)
 	// Build customer
 	customerBuild := &entities.Customer{
-		Name:           request.Name,
-		Sex:            int8(intSex),
-		DOB:            &request.DOB,
-		Email:          request.Email,
-		Phone:          *phone,
-		Password:       request.Password,
-		Address:        request.Address,
-		Photo:          request.Photo,
-		CustomerStatus: 1,
+		Name:         request.Name,
+		Sex:          int8(intSex),
+		DOB:          request.DOB,
+		Email:        request.Email,
+		Phone:        *phone,
+		PasswordHash: request.Password,
+		Address:      request.Address,
+		Photo:        request.Photo,
+		IsActive:     1,
 	}
 
 	tx := c.repo.GetCustomer().GetConnection().(*gorm.DB).Begin()
@@ -117,15 +117,15 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			}
 
 			vehicles = append(vehicles, entities.Vehicle{
-				Brand:      v.Brand,
-				Color:      v.Color,
-				CustomerID: customerBuild.ID,
-				FuelType:   v.FuelType,
-				MaxSpeed:   v.MaxSpeed,
-				Model:      v.Model,
-				PlateNo:    v.PlateNo,
-				Year:       v.Years,
-				CreatedBy:  customerBuild.ID,
+				Brand:           v.Brand,
+				Color:           v.Color,
+				CustomerID:      customerBuild.ID,
+				FuelType:        v.FuelType,
+				MaxSpeed:        v.MaxSpeed,
+				Model:           v.Model,
+				PlateNo:         v.PlateNo,
+				ManufactureYear: v.ManufactureYear,
+				CreatedBy:       customerBuild.ID,
 			})
 		}
 	}
@@ -157,27 +157,27 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 
 	// Build response
 	resBuild := &responses.CustomerResponse{
-		ID:             strconv.Itoa(customerBuild.ID),
-		Name:           customerBuild.Name,
-		Phone:          customerBuild.Phone,
-		Email:          customerBuild.Email,
-		Address:        customerBuild.Address,
-		CustomerStatus: strconv.Itoa(int(customerBuild.CustomerStatus)),
+		ID:       strconv.Itoa(customerBuild.ID),
+		Name:     customerBuild.Name,
+		Phone:    customerBuild.Phone,
+		Email:    customerBuild.Email,
+		Address:  customerBuild.Address,
+		IsActive: strconv.Itoa(int(customerBuild.IsActive)),
 	}
 
 	if len(vehicles) > 0 {
 		resBuild.Vehicle = make([]responses.VehicleResponse, 0, len(vehicles))
 		for _, v := range vehicles {
 			resBuild.Vehicle = append(resBuild.Vehicle, responses.VehicleResponse{
-				ID:       v.ID.String(),
-				Brand:    v.Brand,
-				Color:    v.Color,
-				FuelType: v.FuelType,
-				MaxSpeed: v.MaxSpeed,
-				Model:    v.Model,
-				PlateNo:  v.PlateNo,
-				Year:     v.Year,
-				IsActive: v.IsActive,
+				ID:              v.ID.String(),
+				Brand:           v.Brand,
+				Color:           v.Color,
+				FuelType:        v.FuelType,
+				MaxSpeed:        v.MaxSpeed,
+				Model:           v.Model,
+				PlateNo:         v.PlateNo,
+				ManufactureYear: v.ManufactureYear,
+				IsActive:        v.IsActive,
 			})
 		}
 	}
@@ -289,12 +289,12 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 	custResponse = make([]responses.CustomerResponse, 0, len(resCust.Value))
 	for _, v := range resCust.Value {
 		custResponse = append(custResponse, responses.CustomerResponse{
-			ID:             strconv.Itoa(v.ID),
-			Name:           v.Name,
-			Email:          v.Email,
-			Phone:          v.Phone,
-			Address:        v.Address,
-			CustomerStatus: strconv.Itoa(int(v.CustomerStatus)),
+			ID:       strconv.Itoa(v.ID),
+			Name:     v.Name,
+			Email:    v.Email,
+			Phone:    v.Phone,
+			Address:  v.Address,
+			IsActive: strconv.Itoa(int(v.IsActive)),
 		})
 	}
 
@@ -354,20 +354,20 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 	resCust.Email = mCustt.Email
 	resCust.Phone = mCustt.Phone
 	resCust.Address = mCustt.Address
-	resCust.CustomerStatus = strconv.Itoa(int(mCustt.CustomerStatus))
+	resCust.IsActive = strconv.Itoa(int(mCustt.IsActive))
 
 	if len(checkCust.Value.Vehicles) != 0 {
 		resCust.Vehicle = make([]responses.VehicleResponse, 0, len(checkCust.Value.Vehicles))
 		for _, v := range checkCust.Value.Vehicles {
 			resCust.Vehicle = append(resCust.Vehicle, responses.VehicleResponse{
-				Brand:    v.Brand,
-				Color:    v.Color,
-				FuelType: v.FuelType,
-				MaxSpeed: v.MaxSpeed,
-				Model:    v.Model,
-				PlateNo:  v.PlateNo,
-				Year:     v.Year,
-				IsActive: v.IsActive,
+				Brand:           v.Brand,
+				Color:           v.Color,
+				FuelType:        v.FuelType,
+				MaxSpeed:        v.MaxSpeed,
+				Model:           v.Model,
+				PlateNo:         v.PlateNo,
+				ManufactureYear: v.ManufactureYear,
+				IsActive:        v.IsActive,
 			})
 		}
 	}
@@ -426,20 +426,20 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 	resCust.Email = checkCustomer.Value.Email
 	resCust.Phone = checkCustomer.Value.Phone
 	resCust.Address = checkCustomer.Value.Address
-	resCust.CustomerStatus = strconv.Itoa(int(checkCustomer.Value.CustomerStatus))
+	resCust.IsActive = strconv.Itoa(int(checkCustomer.Value.IsActive))
 
 	if len(checkCustomer.Value.Vehicles) != 0 {
 		resCust.Vehicle = make([]responses.VehicleResponse, 0, len(checkCustomer.Value.Vehicles))
 		for _, v := range checkCustomer.Value.Vehicles {
 			resCust.Vehicle = append(resCust.Vehicle, responses.VehicleResponse{
-				Brand:    v.Brand,
-				Color:    v.Color,
-				FuelType: v.FuelType,
-				MaxSpeed: v.MaxSpeed,
-				Model:    v.Model,
-				PlateNo:  v.PlateNo,
-				Year:     v.Year,
-				IsActive: v.IsActive,
+				Brand:           v.Brand,
+				Color:           v.Color,
+				FuelType:        v.FuelType,
+				MaxSpeed:        v.MaxSpeed,
+				Model:           v.Model,
+				PlateNo:         v.PlateNo,
+				ManufactureYear: v.ManufactureYear,
+				IsActive:        v.IsActive,
 			})
 		}
 	}
@@ -507,15 +507,15 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 		resVehicle = make([]responses.VehicleResponse, 0, len(checkVehicle.Value))
 		for _, v := range checkVehicle.Value {
 			resVehicle = append(resVehicle, responses.VehicleResponse{
-				ID:       v.ID.String(),
-				Brand:    v.Brand,
-				Color:    v.Color,
-				FuelType: v.FuelType,
-				MaxSpeed: v.MaxSpeed,
-				Model:    v.Model,
-				PlateNo:  v.PlateNo,
-				Year:     v.Year,
-				IsActive: v.IsActive,
+				ID:              v.ID.String(),
+				Brand:           v.Brand,
+				Color:           v.Color,
+				FuelType:        v.FuelType,
+				MaxSpeed:        v.MaxSpeed,
+				Model:           v.Model,
+				PlateNo:         v.PlateNo,
+				ManufactureYear: v.ManufactureYear,
+				IsActive:        v.IsActive,
 			})
 		}
 	}
