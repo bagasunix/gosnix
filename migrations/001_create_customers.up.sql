@@ -1,4 +1,4 @@
--- Tabel customers
+-- Create customers table
 CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE customers (
     CONSTRAINT chk_sex CHECK (sex BETWEEN 0 AND 2)
 );
 
--- Index untuk customers
+-- Create indexes for customers
 CREATE INDEX idx_customers_email ON customers(email);
 CREATE INDEX idx_customers_phone ON customers(phone);
 CREATE INDEX idx_customers_deleted_at ON customers(deleted_at);

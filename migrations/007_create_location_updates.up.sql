@@ -1,4 +1,4 @@
--- Tabel location_updates
+-- Create location_updates table
 CREATE TABLE location_updates (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     vehicle_id UUID NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE location_updates (
     CONSTRAINT fk_location_updates_session FOREIGN KEY (session_id) REFERENCES tracking_sessions(id)
 );
 
--- Index untuk location_updates
+-- Create indexes for location_updates
 CREATE INDEX idx_location_updates_vehicle_id ON location_updates(vehicle_id);
 CREATE INDEX idx_location_updates_session_id ON location_updates(session_id);
 CREATE INDEX idx_location_updates_received_at ON location_updates(received_at);

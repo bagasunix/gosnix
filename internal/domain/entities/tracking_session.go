@@ -13,7 +13,6 @@ type TrackingSession struct {
 	SessionName   string    `gorm:"size:255;not null"`
 	StartTime     time.Time `gorm:"not null"`
 	EndTime       *time.Time
-	Status        string         `gorm:"size:50;default:'ACTIVE';not null"`
 	TotalDistance float64        `gorm:"type:decimal(10,3);default:0.0"`
 	TotalDuration int            `gorm:"default:0"`
 	CreatedBy     int            `gorm:"not null"`
