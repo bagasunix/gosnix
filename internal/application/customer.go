@@ -20,6 +20,7 @@ import (
 	"github.com/bagasunix/gosnix/internal/infrastructure/persistence/postgres"
 	"github.com/bagasunix/gosnix/pkg/configs"
 	"github.com/bagasunix/gosnix/pkg/errors"
+	"github.com/bagasunix/gosnix/pkg/hash"
 	"github.com/bagasunix/gosnix/pkg/utils"
 )
 
@@ -47,16 +48,32 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		return response
 	}
 
-	checkEmail := c.repo.GetCustomer().FindByParams(ctx, map[string]any{"phone": &phone})
-	if checkEmail.Value.Phone == *phone {
+	// Check if phone already exists
+	checkPhone := c.repo.GetCustomer().FindByParams(ctx, map[string]any{"phone": *phone})
+	if checkPhone.Value.Phone == *phone {
 		response.Code = fiber.StatusConflict
 		response.Message = "Phone sudah terdaftar"
 		response.Errors = "phone " + errors.ERR_ALREADY_EXISTS
 		return response
 	}
-	if checkEmail.Error != nil && !strings.Contains(checkEmail.Error.Error(), "not found") {
+	if checkPhone.Error != nil && !strings.Contains(checkPhone.Error.Error(), "not found") {
 		response.Code = fiber.StatusConflict
 		response.Message = "Validasi phone invalid"
+		response.Errors = checkPhone.Error.Error()
+		return response
+	}
+
+	// Check if email already exists
+	checkEmail := c.repo.GetCustomer().FindByParams(ctx, map[string]any{"email": request.Email})
+	if checkEmail.Value.Email == request.Email {
+		response.Code = fiber.StatusConflict
+		response.Message = "Email sudah terdaftar"
+		response.Errors = "email " + errors.ERR_ALREADY_EXISTS
+		return response
+	}
+	if checkEmail.Error != nil && !strings.Contains(checkEmail.Error.Error(), "not found") {
+		response.Code = fiber.StatusConflict
+		response.Message = "Validasi email invalid"
 		response.Errors = checkEmail.Error.Error()
 		return response
 	}
@@ -69,7 +86,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		DOB:          request.DOB,
 		Email:        request.Email,
 		Phone:        *phone,
-		PasswordHash: request.Password,
+		PasswordHash: hash.HashAndSalt([]byte(request.Password)), // Pastikan untuk menghash password
 		Address:      request.Address,
 		Photo:        request.Photo,
 		IsActive:     1,
@@ -90,10 +107,15 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 	}
 
 	vehicles := make([]entities.Vehicle, 0, len(request.Vehicle))
+	devices := make([]entities.DeviceGPS, 0, len(request.Vehicle))
+	vehicleDevices := make([]entities.VehicleDevice, 0, len(request.Vehicle))
+
 	if len(request.Vehicle) != 0 {
 		platSet := make(map[string]struct{}, len(request.Vehicle))
+		imeiSet := make(map[string]struct{}, len(request.Vehicle))
+
 		for _, v := range request.Vehicle {
-			// Cek duplikat dalam request
+			// Cek duplikat plat dalam request
 			if _, exists := platSet[v.PlateNo]; exists {
 				response.Code = fiber.StatusBadRequest
 				response.Message = "Nomor plat duplikat dalam request"
@@ -102,6 +124,33 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			}
 			platSet[v.PlateNo] = struct{}{}
 
+			// Cek duplikat IMEI dalam request
+			if v.DeviceGPS.IMEI != "" {
+				if _, exists := imeiSet[v.DeviceGPS.IMEI]; exists {
+					response.Code = fiber.StatusBadRequest
+					response.Message = "IMEI duplikat dalam request"
+					response.Errors = "IMEI " + v.DeviceGPS.IMEI + " sudah ada di request"
+					return response
+				}
+				imeiSet[v.DeviceGPS.IMEI] = struct{}{}
+
+				// Cek IMEI di database
+				checkImei := c.repo.GetDeviceGPS().FindByParams(ctx, map[string]interface{}{"imei": v.DeviceGPS.IMEI})
+				if checkImei.Value.IMEI == v.DeviceGPS.IMEI {
+					response.Code = fiber.StatusConflict
+					response.Message = "Device GPS sudah terdaftar"
+					response.Errors = "IMEI " + errors.ERR_ALREADY_EXISTS
+					return response
+				}
+				if checkImei.Error != nil && !strings.Contains(checkImei.Error.Error(), "not found") {
+					response.Code = fiber.StatusConflict
+					response.Message = "Validasi IMEI invalid"
+					response.Errors = checkImei.Error.Error()
+					return response
+				}
+			}
+
+			// Cek plat di database
 			checkPlat := c.repo.GetVehicle().FindByParam(ctx, map[string]interface{}{"plate_no": v.PlateNo})
 			if checkPlat.Value.PlateNo == v.PlateNo {
 				response.Code = fiber.StatusConflict
@@ -116,7 +165,8 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 				return response
 			}
 
-			vehicles = append(vehicles, entities.Vehicle{
+			// Build vehicle
+			vehicle := entities.Vehicle{
 				Brand:           v.Brand,
 				Color:           v.Color,
 				CustomerID:      customerBuild.ID,
@@ -126,16 +176,63 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 				PlateNo:         v.PlateNo,
 				ManufactureYear: v.ManufactureYear,
 				CreatedBy:       customerBuild.ID,
-			})
+			}
+			vehicles = append(vehicles, vehicle)
+
+			// Jika ada device GPS, buat device dan vehicle device
+			if v.DeviceGPS.IMEI != "" {
+				device := entities.DeviceGPS{
+					IMEI:      v.DeviceGPS.IMEI,
+					Brand:     v.DeviceGPS.Brand,
+					Model:     v.DeviceGPS.Model,
+					Protocol:  v.DeviceGPS.Protocol,
+					SecretKey: v.DeviceGPS.SecretKey,
+					CreatedBy: customerBuild.ID,
+				}
+				devices = append(devices, device)
+			}
 		}
 	}
 
+	// Simpan kendaraan
 	if len(vehicles) != 0 {
 		if err := c.repo.GetVehicle().SaveBatchTx(ctx, tx, vehicles); err != nil {
 			tx.Rollback()
 			return responses.BaseResponse[responses.CustomerResponse]{
 				Code:    fiber.StatusConflict,
-				Message: "Gagal membuat pelanggan",
+				Message: "Gagal membuat kendaraan",
+				Errors:  err.Error(),
+			}
+		}
+	}
+
+	// Simpan devices
+	if len(devices) != 0 {
+		if err := c.repo.GetDeviceGPS().SaveBatchTx(ctx, tx, devices); err != nil {
+			tx.Rollback()
+			return responses.BaseResponse[responses.CustomerResponse]{
+				Code:    fiber.StatusConflict,
+				Message: "Gagal membuat device GPS",
+				Errors:  err.Error(),
+			}
+		}
+
+		// Buat hubungan vehicle-device
+		for i, device := range devices {
+			vehicleDevice := entities.VehicleDevice{
+				VehicleID: vehicles[i].ID,
+				DeviceID:  device.ID,
+				StartTime: time.Now(),
+				IsActive:  1,
+			}
+			vehicleDevices = append(vehicleDevices, vehicleDevice)
+		}
+
+		if err := c.repo.GetVehicleDevice().SaveBatchTx(ctx, tx, vehicleDevices); err != nil {
+			tx.Rollback()
+			return responses.BaseResponse[responses.CustomerResponse]{
+				Code:    fiber.StatusConflict,
+				Message: "Gagal menghubungkan kendaraan dengan device",
 				Errors:  err.Error(),
 			}
 		}
@@ -149,7 +246,6 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 	}
 
 	// Hapus cache Redis
-	// hapus semua key yang dimulai dengan "customers:"
 	keys, _ := c.redis.Keys(ctx, "customers:*").Result()
 	if len(keys) > 0 {
 		c.redis.Del(ctx, keys...)
@@ -157,18 +253,20 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 
 	// Build response
 	resBuild := &responses.CustomerResponse{
-		ID:       strconv.Itoa(customerBuild.ID),
-		Name:     customerBuild.Name,
-		Phone:    customerBuild.Phone,
-		Email:    customerBuild.Email,
-		Address:  customerBuild.Address,
-		IsActive: strconv.Itoa(int(customerBuild.IsActive)),
+		ID:        customerBuild.ID,
+		Name:      customerBuild.Name,
+		Sex:       customerBuild.Sex,
+		Phone:     customerBuild.Phone,
+		Email:     customerBuild.Email,
+		Address:   customerBuild.Address,
+		IsActive:  strconv.Itoa(int(customerBuild.IsActive)),
+		CreatedAt: customerBuild.CreatedAt,
 	}
 
 	if len(vehicles) > 0 {
 		resBuild.Vehicle = make([]responses.VehicleResponse, 0, len(vehicles))
-		for _, v := range vehicles {
-			resBuild.Vehicle = append(resBuild.Vehicle, responses.VehicleResponse{
+		for i, v := range vehicles {
+			vehicleResponse := responses.VehicleResponse{
 				ID:              v.ID.String(),
 				Brand:           v.Brand,
 				Color:           v.Color,
@@ -178,7 +276,23 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 				PlateNo:         v.PlateNo,
 				ManufactureYear: v.ManufactureYear,
 				IsActive:        v.IsActive,
-			})
+			}
+
+			// Tambahkan informasi device jika ada
+			if i < len(devices) {
+				vehicleResponse.Device = &responses.DeviceGPSResponse{
+					ID:          devices[i].ID.String(),
+					IMEI:        devices[i].IMEI,
+					Brand:       devices[i].Brand,
+					Model:       devices[i].Model,
+					Protocol:    devices[i].Protocol,
+					IsActive:    1,
+					InstalledAt: time.Now(),
+					CreatedAt:   devices[i].CreatedAt,
+				}
+			}
+
+			resBuild.Vehicle = append(resBuild.Vehicle, vehicleResponse)
 		}
 	}
 
@@ -289,7 +403,7 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 	custResponse = make([]responses.CustomerResponse, 0, len(resCust.Value))
 	for _, v := range resCust.Value {
 		custResponse = append(custResponse, responses.CustomerResponse{
-			ID:       strconv.Itoa(v.ID),
+			ID:       v.ID,
 			Name:     v.Name,
 			Email:    v.Email,
 			Phone:    v.Phone,
@@ -349,7 +463,7 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 	}
 
 	resCust := new(responses.CustomerResponse)
-	resCust.ID = strconv.Itoa(mCustt.ID)
+	resCust.ID = mCustt.ID
 	resCust.Name = mCustt.Name
 	resCust.Email = mCustt.Email
 	resCust.Phone = mCustt.Phone
@@ -421,7 +535,7 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 		return response
 	}
 
-	resCust.ID = strconv.Itoa(checkCustomer.Value.ID)
+	resCust.ID = checkCustomer.Value.ID
 	resCust.Name = checkCustomer.Value.Name
 	resCust.Email = checkCustomer.Value.Email
 	resCust.Phone = checkCustomer.Value.Phone

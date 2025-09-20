@@ -14,11 +14,9 @@ type CreateCustomer struct {
 	DOB      *time.Time `json:"dob"`
 	Email    string     `json:"email"`
 	Phone    string     `json:"phone"`
-	Password string     `bson:"password"`
+	Password string     `json:"password"`
 	Address  string     `json:"address"`
 	Photo    string     `json:"photo"`
-
-	DeviceGPS RegistrationGPS `json:"device_gps,omitempty"`
 
 	Vehicle []CreateVehicle `json:"vehicle,omitempty"`
 }

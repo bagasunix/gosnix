@@ -12,6 +12,8 @@ type CreateVehicle struct {
 	ManufactureYear int    `json:"manufacture_year"`
 	MaxSpeed        int    `json:"max_speed"`
 	FuelType        string `json:"fuel_type"`
+
+	DeviceGPS RegistrationGPS `json:"device_gps,omitempty"`
 }
 
 func (v CreateVehicle) Validate() error {

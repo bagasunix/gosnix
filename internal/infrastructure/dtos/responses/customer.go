@@ -3,9 +3,9 @@ package responses
 import "time"
 
 type CustomerResponse struct {
-	ID       string `json:"id"`
+	ID       int    `json:"id"`
 	Name     string `json:"name"`
-	Sex      string `json:"sex"`
+	Sex      int8   `json:"sex"`
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
 	Address  string

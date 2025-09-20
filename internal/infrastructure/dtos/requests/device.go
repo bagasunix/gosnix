@@ -19,6 +19,7 @@ type GPSData struct {
 }
 
 type RegistrationGPS struct {
+	IMEI      string `json:"imei"`
 	Brand     string `json:"brand"`
 	Model     string `json:"model"`
 	Protocol  string `json:"protocol"`

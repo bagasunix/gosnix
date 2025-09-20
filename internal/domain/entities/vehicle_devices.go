@@ -13,7 +13,7 @@ type VehicleDevice struct {
 	DeviceID  uuid.UUID `gorm:"type:uuid;not null;index"`
 	StartTime time.Time `gorm:"not null"`
 	EndTime   *time.Time
-	IsActive  bool           `gorm:"default:true;not null"`
+	IsActive  int            `gorm:"default:0;not null"`
 	CreatedAt time.Time      `gorm:"autoCreateTime"`
 	UpdatedAt *time.Time     `gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `gorm:"index"`

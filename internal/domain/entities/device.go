@@ -9,9 +9,9 @@ import (
 
 type DeviceGPS struct {
 	ID        uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	IMEI      string         `gorm:"size:15;uniqueIndex;not null"`
 	Brand     string         `gorm:"size:100;not null"`
 	Model     string         `gorm:"size:100;not null"`
-	IMEI      string         `gorm:"size:15;uniqueIndex;not null"`
 	Protocol  string         `gorm:"size:20;not null"` // TCP, UDP, HTTP, MQTT
 	SecretKey string         `gorm:"size:255;not null"`
 	CreatedBy int            `gorm:"not null"`
