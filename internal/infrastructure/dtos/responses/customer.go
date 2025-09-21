@@ -10,7 +10,7 @@ type CustomerResponse struct {
 	Phone    string `json:"phone"`
 	Address  string
 	Photo    string
-	IsActive string `json:"is_active"`
+	IsActive int8 `json:"is_active"`
 
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`

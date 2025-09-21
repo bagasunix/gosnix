@@ -10,7 +10,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/phuslu/log"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	"github.com/bagasunix/gosnix/internal/domain/entities"
@@ -18,6 +17,7 @@ import (
 	"github.com/bagasunix/gosnix/internal/infrastructure/dtos/requests"
 	"github.com/bagasunix/gosnix/internal/infrastructure/dtos/responses"
 	"github.com/bagasunix/gosnix/internal/infrastructure/persistence/postgres"
+	"github.com/bagasunix/gosnix/internal/infrastructure/persistence/redis_client"
 	"github.com/bagasunix/gosnix/pkg/configs"
 	"github.com/bagasunix/gosnix/pkg/errors"
 	"github.com/bagasunix/gosnix/pkg/hash"
@@ -26,10 +26,10 @@ import (
 
 type customerService struct {
 	cfg    *configs.Cfg
-	db     *gorm.DB
 	repo   postgres.Repositories
+	cache  redis_client.RedisClient
 	logger *log.Logger
-	redis  *redis.Client
+	// redis  *redis.Client
 }
 
 // Create implements customer.CustomerUsecase.
@@ -246,9 +246,11 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 	}
 
 	// Hapus cache Redis
-	keys, _ := c.redis.Keys(ctx, "customers:*").Result()
-	if len(keys) > 0 {
-		c.redis.Del(ctx, keys...)
+	if err = c.cache.GetCustiomerCache().DeleteByPattern(ctx, "customers:*"); err != nil {
+		response.Code = fiber.StatusConflict
+		response.Message = "Gagal membuat pelanggan"
+		response.Errors = err.Error()
+		return response
 	}
 
 	// Build response
@@ -259,7 +261,8 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		Phone:     customerBuild.Phone,
 		Email:     customerBuild.Email,
 		Address:   customerBuild.Address,
-		IsActive:  strconv.Itoa(int(customerBuild.IsActive)),
+		Photo:     customerBuild.Photo,
+		IsActive:  customerBuild.IsActive,
 		CreatedAt: customerBuild.CreatedAt,
 	}
 
@@ -328,13 +331,20 @@ func (c *customerService) DeleteCustomer(ctx context.Context, request *requests.
 	}
 
 	// 3. Hapus cache Redis
-	cacheKey := fmt.Sprintf("customers:%d", intId)
-	c.redis.Del(ctx, cacheKey) // Hapus cache detail
+	// Hapus cache detail customer
+	if err := c.cache.GetCustiomerCache().Delete(ctx, fmt.Sprintf("customers:%d", intId)); err != nil {
+		response.Code = fiber.StatusBadRequest
+		response.Message = "Data gagal dihapus"
+		response.Errors = err.Error()
+		return response
+	}
 
 	// Hapus cache list (opsional, pattern search)
-	listKeys, _ := c.redis.Keys(ctx, "customers:search=*").Result()
-	if len(listKeys) > 0 {
-		c.redis.Del(ctx, listKeys...)
+	if err := c.cache.GetCustiomerCache().DeleteByPattern(ctx, "customers:search=*"); err != nil {
+		response.Code = fiber.StatusBadRequest
+		response.Message = "Data gagal dihapus"
+		response.Errors = err.Error()
+		return response
 	}
 
 	response.Message = "Data berhasil dihapus"
@@ -361,12 +371,14 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 	var custResponse []responses.CustomerResponse
 
 	// Cek Redis
-	val, err := c.redis.Get(ctx, cacheKey).Result()
+	// val, err := c.redis.Get(ctx, cacheKey).Result()
+	val, err := c.cache.GetCustiomerCache().Get(ctx, 5*time.Minute, cacheKey)
 	if err == nil {
 		// Cache hit, unmarshal langsung
-		if err := json.Unmarshal([]byte(val), &custResponse); err == nil {
+		if err := json.Unmarshal([]byte(*val), &custResponse); err == nil {
 			// Hit, kembalikan response dengan paging
-			totalItems, _ := c.redis.Get(ctx, "customers:count:search="+request.Search).Int() // optional cache count
+			// totalItems, _ := c.redis.Get(ctx, "customers:count:search="+request.Search).Int() // optional cache count
+			totalItems, _ := c.cache.GetCustiomerCache().GetCount(ctx, "customers:count:search="+request.Search)
 			totalPages := (totalItems + limit - 1) / limit
 			response.Data = &custResponse
 			response.Paging = &responses.PageMetadata{
@@ -405,17 +417,29 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 		custResponse = append(custResponse, responses.CustomerResponse{
 			ID:       v.ID,
 			Name:     v.Name,
+			Sex:      v.Sex,
 			Email:    v.Email,
 			Phone:    v.Phone,
 			Address:  v.Address,
-			IsActive: strconv.Itoa(int(v.IsActive)),
+			Photo:    v.Photo,
+			IsActive: v.IsActive,
 		})
 	}
 
 	// Simpan ke Redis
 	data, _ := json.Marshal(custResponse)
-	c.redis.Set(ctx, cacheKey, data, 5*time.Minute)
-	c.redis.Set(ctx, "customers:count:search="+request.Search, totalItems, 5*time.Minute)
+	if err = c.cache.GetCustiomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
+		response.Code = 400
+		response.Message = "Gagal menarik data"
+		response.Errors = err.Error()
+		return response
+	}
+	if err = c.cache.GetCustiomerCache().Set(ctx, 5*time.Minute, totalItems, "customers:count:search="+request.Search); err != nil {
+		response.Code = 400
+		response.Message = "Gagal menarik data"
+		response.Errors = err.Error()
+		return response
+	}
 
 	response.Data = &custResponse
 	response.Paging = &responses.PageMetadata{
@@ -465,10 +489,11 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 	resCust := new(responses.CustomerResponse)
 	resCust.ID = mCustt.ID
 	resCust.Name = mCustt.Name
+	resCust.Sex = mCustt.Sex
 	resCust.Email = mCustt.Email
 	resCust.Phone = mCustt.Phone
 	resCust.Address = mCustt.Address
-	resCust.IsActive = strconv.Itoa(int(mCustt.IsActive))
+	resCust.IsActive = mCustt.IsActive
 
 	if len(checkCust.Value.Vehicles) != 0 {
 		resCust.Vehicle = make([]responses.VehicleResponse, 0, len(checkCust.Value.Vehicles))
@@ -487,12 +512,19 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 	}
 
 	// Hapus cache detail
-	c.redis.Del(ctx, cacheKey)
+	if err := c.cache.GetCustiomerCache().Delete(ctx, cacheKey); err != nil {
+		response.Code = fiber.StatusBadRequest
+		response.Message = "Gagal memperbarui pelanggan"
+		response.Errors = err.Error()
+		return response
+	}
 
 	// 4. Hapus cache list (opsional)
-	listKeys, _ := c.redis.Keys(ctx, "customers:search=*").Result()
-	if len(listKeys) > 0 {
-		c.redis.Del(ctx, listKeys...)
+	if err := c.cache.GetCustiomerCache().DeleteByPattern(ctx, "customers:search=*"); err != nil {
+		response.Code = fiber.StatusBadRequest
+		response.Message = "Gagal memperbarui pelanggan"
+		response.Errors = err.Error()
+		return response
 	}
 
 	response.Data = &resCust
@@ -516,10 +548,10 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 
 	//  Cek Redis dulu
 	resCust := new(responses.CustomerResponse)
-	val, err := c.redis.Get(ctx, cacheKey).Result()
+	val, err := c.cache.GetCustiomerCache().Get(ctx, cacheKey)
 	if err == nil {
 		// Cache hit, unmarshal JSON
-		if err := json.Unmarshal([]byte(val), &resCust); err == nil {
+		if err := json.Unmarshal([]byte(*val), &resCust); err == nil {
 			response.Data = &resCust
 			response.Message = "Pelanggan ditemukan"
 			response.Code = fiber.StatusOK
@@ -540,7 +572,8 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 	resCust.Email = checkCustomer.Value.Email
 	resCust.Phone = checkCustomer.Value.Phone
 	resCust.Address = checkCustomer.Value.Address
-	resCust.IsActive = strconv.Itoa(int(checkCustomer.Value.IsActive))
+	resCust.Photo = checkCustomer.Value.Photo
+	resCust.IsActive = checkCustomer.Value.IsActive
 
 	if len(checkCustomer.Value.Vehicles) != 0 {
 		resCust.Vehicle = make([]responses.VehicleResponse, 0, len(checkCustomer.Value.Vehicles))
@@ -560,7 +593,12 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 
 	// Simpan ke Redis dengan expire 5 menit
 	data, _ := json.Marshal(resCust)
-	c.redis.Set(ctx, cacheKey, data, 5*time.Minute)
+	if err = c.cache.GetCustiomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
+		response.Code = fiber.StatusBadRequest
+		response.Message = "Gagal menarik data"
+		response.Errors = err.Error()
+		return response
+	}
 
 	response.Data = &resCust
 	response.Message = "Pelanggan ditemukan"
@@ -588,10 +626,11 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 
 	//  Cek Redis dulu
 	var resVehicle []responses.VehicleResponse
-	val, err := c.redis.Get(ctx, cacheKey).Result()
+	// val, err := c.redis.Get(ctx, cacheKey).Result()
+	val, err := c.cache.GetCustiomerCache().Get(ctx, cacheKey)
 	if err == nil {
 		// Cache hit, unmarshal JSON
-		if err := json.Unmarshal([]byte(val), &resVehicle); err == nil {
+		if err := json.Unmarshal([]byte(*val), &resVehicle); err == nil {
 			response.Data = &resVehicle
 			response.Message = "Inquiry kendaraan berhasil"
 			response.Code = fiber.StatusOK
@@ -636,8 +675,18 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 
 	// Simpan ke Redis dengan expire 5 menit
 	data, _ := json.Marshal(resVehicle)
-	c.redis.Set(ctx, cacheKey, data, 5*time.Minute)
-	c.redis.Set(ctx, countKey, totalItems, 5*time.Minute)
+	if err = c.cache.GetCustiomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
+		response.Code = 400
+		response.Message = "Gagal menarik data"
+		response.Errors = err.Error()
+		return response
+	}
+	if err = c.cache.GetCustiomerCache().Set(ctx, 5*time.Minute, totalItems, countKey); err != nil {
+		response.Code = 400
+		response.Message = "Gagal menarik data"
+		response.Errors = err.Error()
+		return response
+	}
 
 	response.Data = &resVehicle
 	response.Paging = &responses.PageMetadata{
@@ -651,6 +700,6 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 	return response
 }
 
-func NewCustomerService(logger *log.Logger, db *gorm.DB, repo postgres.Repositories, redis *redis.Client, cfg *configs.Cfg) service.CustomerService {
-	return &customerService{db: db, repo: repo, logger: logger, redis: redis, cfg: cfg}
+func NewCustomerService(logger *log.Logger, repo postgres.Repositories, cfg *configs.Cfg) service.CustomerService {
+	return &customerService{repo: repo, logger: logger, cfg: cfg}
 }

@@ -9,10 +9,17 @@ import (
 
 type RedisClient interface {
 	GetHealth() repository.RedisRepository
+	GetCustiomerCache() repository.CustomerCacheRepository
 }
 
 type repo struct {
-	health repository.RedisRepository
+	health   repository.RedisRepository
+	customer repository.CustomerCacheRepository
+}
+
+// GetCustiomerCache implements RedisClient.
+func (r *repo) GetCustiomerCache() repository.CustomerCacheRepository {
+	return r.customer
 }
 
 // GetHealth implements RedisClient.
@@ -21,5 +28,8 @@ func (r *repo) GetHealth() repository.RedisRepository {
 }
 
 func New(logger *log.Logger, redisClient *redis.Client) RedisClient {
-	return &repo{health: NewHealthRepo(logger, redisClient)}
+	return &repo{
+		health:   NewHealthRepo(logger, redisClient),
+		customer: NewCustomerCache(logger, redisClient),
+	}
 }
