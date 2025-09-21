@@ -441,6 +441,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Toyota"
                 },
+                "category": {
+                    "type": "string",
+                    "example": "SUV"
+                },
                 "color": {
                     "type": "string",
                     "example": "Hitam"

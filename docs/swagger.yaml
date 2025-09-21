@@ -219,6 +219,9 @@ definitions:
       brand:
         example: Toyota
         type: string
+      category:
+        example: SUV
+        type: string
       color:
         example: Hitam
         type: string
