@@ -2,16 +2,19 @@ package requests
 
 import (
 	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/gofrs/uuid"
 )
 
 type CreateVehicle struct {
-	PlateNo         string `json:"plate_no"`
-	Model           string `json:"model"`
-	Brand           string `json:"brand"`
-	Color           string `json:"color"`
-	ManufactureYear int    `json:"manufacture_year"`
-	MaxSpeed        int    `json:"max_speed"`
-	FuelType        string `json:"fuel_type"`
+	PlateNo         string    `json:"plate_no"`
+	VIN             string    `json:"vin"`
+	CategoryID      uuid.UUID `json:"category_id"`
+	Model           string    `json:"model"`
+	Brand           string    `json:"brand"`
+	Color           string    `json:"color"`
+	ManufactureYear int       `json:"manufacture_year"`
+	MaxSpeed        int       `json:"max_speed"`
+	FuelType        string    `json:"fuel_type"`
 
 	DeviceGPS RegistrationGPS `json:"device_gps,omitempty"`
 }

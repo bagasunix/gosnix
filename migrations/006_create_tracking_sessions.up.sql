@@ -18,7 +18,6 @@ CREATE TABLE tracking_sessions (
 -- Create indexes for tracking_sessions
 CREATE INDEX idx_tracking_sessions_vehicle_id ON tracking_sessions(vehicle_id);
 CREATE INDEX idx_tracking_sessions_created_by ON tracking_sessions(created_by);
-CREATE INDEX idx_tracking_sessions_status ON tracking_sessions(status);
 CREATE INDEX idx_tracking_sessions_start_time ON tracking_sessions(start_time);
 CREATE INDEX idx_tracking_sessions_deleted_at ON tracking_sessions(deleted_at);
 CREATE INDEX idx_tracking_sessions_time_range ON tracking_sessions(start_time, end_time);

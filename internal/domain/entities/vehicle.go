@@ -20,7 +20,7 @@ type Vehicle struct {
 	FuelType        string         `gorm:"size:50;not null"`
 	EngineCapacity  float64        `gorm:"type:decimal(6,2);not null"`
 	MaxSpeed        int            `gorm:"not null"`
-	IsActive        int            `gorm:"default:true;not null"`
+	IsActive        int            `gorm:"default:0;not null"`
 	CreatedBy       int            `gorm:"not null"`
 	CreatedAt       time.Time      `gorm:"autoCreateTime"`
 	UpdatedAt       *time.Time     `gorm:"autoUpdateTime"`

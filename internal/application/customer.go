@@ -165,11 +165,13 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			vehicle := entities.Vehicle{
 				Brand:           v.Brand,
 				Color:           v.Color,
+				CategoryID:      v.CategoryID,
 				CustomerID:      customerBuild.ID,
 				FuelType:        v.FuelType,
 				MaxSpeed:        v.MaxSpeed,
 				Model:           v.Model,
 				PlateNo:         v.PlateNo,
+				VIN:             v.VIN,
 				ManufactureYear: v.ManufactureYear,
 				CreatedBy:       customerBuild.ID,
 			}
@@ -613,14 +615,14 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 	intLimit, _ := strconv.Atoi(request.Limit)
 	paramID, _ := strconv.Atoi(request.CustomerID)
 	// --- Redis key berdasarkan customer ID
-	cacheKey := fmt.Sprintf("vehicles:customer:%s:search=%s:page=%d:limit=%d", paramID, request.Search, intPage, intLimit)
-	countKey := fmt.Sprintf("vehicles:customer:%s:count:search=%s", request.CustomerID, request.Search)
+	cacheKey := fmt.Sprintf("customer:%v:search=%s:page=%d:limit=%d", paramID, request.Search, intPage, intLimit)
+	countKey := fmt.Sprintf("customer:%s:count:search=%s", request.CustomerID, request.Search)
 	offset, limit := utils.CalculateOffsetAndLimit(intPage, intLimit)
 
 	//  Cek Redis dulu
 	var resVehicle []responses.VehicleResponse
 	// val, err := c.redis.Get(ctx, cacheKey).Result()
-	val, err := c.cache.GetCustomerCache().Get(ctx, cacheKey)
+	val, err := c.cache.GetVehicleCache().Get(ctx, cacheKey)
 	if err == nil {
 		// Cache hit, unmarshal JSON
 		if err := json.Unmarshal([]byte(*val), &resVehicle); err == nil {
@@ -668,13 +670,13 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 
 	// Simpan ke Redis dengan expire 5 menit
 	data, _ := json.Marshal(resVehicle)
-	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
+	if err = c.cache.GetVehicleCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
 		response.Code = 400
 		response.Message = "Gagal menarik data"
 		response.Errors = err.Error()
 		return response
 	}
-	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, totalItems, countKey); err != nil {
+	if err = c.cache.GetVehicleCache().Set(ctx, 5*time.Minute, totalItems, countKey); err != nil {
 		response.Code = 400
 		response.Message = "Gagal menarik data"
 		response.Errors = err.Error()
