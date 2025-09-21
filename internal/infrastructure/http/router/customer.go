@@ -7,5 +7,6 @@ import (
 )
 
 func SetupCustomerRoutes(router fiber.Router, handler *handlers.CustomerHandler) {
-	router.Get("/:id", handler.ViewCustomer)
+	router.Get(":id", handler.ViewCustomer)
+	router.Post("", handler.Create)
 }

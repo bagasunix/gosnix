@@ -20,6 +20,6 @@ type DeviceStatusResponse struct {
 	DeviceGPSResponse
 	VehicleInfo   *VehicleShortInfo `json:"vehicle_info,omitempty"`
 	LastLocation  *LocationResponse `json:"last_location,omitempty"`
-	OnlineStatus  bool              `json:"online_status"`
+	OnlineStatus  int               `json:"online_status"`
 	LastHeartbeat *time.Time        `json:"last_heartbeat,omitempty"`
 }

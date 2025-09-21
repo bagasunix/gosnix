@@ -17,6 +17,7 @@ import (
 type customerCache struct {
 	client *redis.Client
 	logger *log.Logger
+	prefix string
 }
 
 // DeleteByPattern implements repository.CustomerCacheRepository.
@@ -35,7 +36,7 @@ func (c *customerCache) DeleteByPattern(ctx context.Context, pattern string) err
 
 // helper build key
 func (c *customerCache) buildKey(parts ...any) string {
-	var key string
+	key := c.prefix
 	for i, p := range parts {
 		if i > 0 {
 			key += ":"
@@ -114,5 +115,6 @@ func NewCustomerCache(logger *log.Logger, client *redis.Client) repository.Custo
 	return &customerCache{
 		client: client,
 		logger: logger,
+		prefix: "customers:",
 	}
 }

@@ -22,13 +22,13 @@ import (
 // Injectors from wire.go:
 
 // Entry point buat bikin semua handler
-func InitializeServiceHandler(db *gorm.DB, redisClient *redis.Client, rabbitConn *amqp091.Connection, logger *log.Logger, cfg *configs.Cfg) *HandlerContainer {
+func InitializeServiceHandler(db *gorm.DB, redis2 *redis.Client, rabbitConn *amqp091.Connection, logger *log.Logger, cfg *configs.Cfg) *HandlerContainer {
 	repositories := postgres.New(logger, db)
-	redis_clientRedisClient := redis_client.New(logger, redisClient)
+	redisClient := redis_client.New(logger, redis2)
 	rmqClient := rabbitmq.New(logger, rabbitConn)
-	serviceHealthService := NewHealthService(repositories, redis_clientRedisClient, rmqClient)
+	serviceHealthService := NewHealthService(repositories, redisClient, rmqClient)
 	healthHandler := handlers.NewHealthHandler(serviceHealthService)
-	serviceCustomerService := NewCustomerService(logger, repositories, cfg)
+	serviceCustomerService := NewCustomerService(logger, redisClient, repositories, cfg)
 	customerHandler := handlers.NewCustomerHandler(serviceCustomerService)
 	handlerContainer := &HandlerContainer{
 		Health:   healthHandler,

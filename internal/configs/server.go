@@ -26,7 +26,7 @@ func Run() {
 
 	// Initialize handler & setup routes
 	serviceHandler := application.InitializeServiceHandler(container.DB, container.RedisClient, container.RabbitConn, container.Logger, container.Cfg)
-	httpRouter.SetupRoutes(container.FiberApp, serviceHandler.Health, serviceHandler.Customer)
+	httpRouter.SetupRoutes(container.FiberApp, container.Cfg, serviceHandler.Health, serviceHandler.Customer)
 
 	// Channel untuk menangani error atau signal
 	errs := make(chan error, 1)

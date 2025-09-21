@@ -18,6 +18,37 @@ func NewCustomerHandler(service service.CustomerService) *CustomerHandler {
 	return &CustomerHandler{service: service}
 }
 
+// Create godoc
+// @Summary Membuat customer baru
+// @Description Membuat data customer baru beserta kendaraan opsional
+// @Tags Customer
+// @Accept  json
+// @Produce  json
+// @Param   request body requests.CreateCustomer true "Customer Request"
+// @Success 200 {object} responses.BaseResponseCustomer
+// @Failure 400 {object} responses.BaseResponseSwagger
+// @Failure 401 {object} responses.BaseResponseSwagger
+// @Failure 409 {object} responses.BaseResponseSwagger
+// @Router /customers [post]
+// @Security BearerAuth
+func (ac *CustomerHandler) Create(ctx *fiber.Ctx) error {
+	request := new(requests.CreateCustomer)
+	var response responses.BaseResponse[responses.CustomerResponse]
+	if err := ctx.BodyParser(request); err != nil {
+		response.Code = fiber.StatusBadRequest
+		response.Message = "Invalid request"
+		response.Errors = err.Error()
+		return ctx.Status(fiber.StatusBadRequest).JSON(response)
+	}
+
+	response = ac.service.Create(ctx.Context(), request)
+	if response.Errors != "" {
+		return ctx.Status(response.Code).JSON(response)
+	}
+
+	return ctx.Status(response.Code).JSON(response)
+}
+
 // ViewCustomer godoc
 // @Summary Mendapatkan detail customer
 // @Description Menampilkan detail customer berdasarkan ID

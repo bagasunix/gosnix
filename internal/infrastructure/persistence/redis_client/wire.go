@@ -9,7 +9,7 @@ import (
 
 type RedisClient interface {
 	GetHealth() repository.RedisRepository
-	GetCustiomerCache() repository.CustomerCacheRepository
+	GetCustomerCache() repository.CustomerCacheRepository
 }
 
 type repo struct {
@@ -18,7 +18,7 @@ type repo struct {
 }
 
 // GetCustiomerCache implements RedisClient.
-func (r *repo) GetCustiomerCache() repository.CustomerCacheRepository {
+func (r *repo) GetCustomerCache() repository.CustomerCacheRepository {
 	return r.customer
 }
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -59,7 +59,7 @@ func NewPostgresDB(ctx context.Context, cfg *utils.DBConfig, migrationPath strin
 	sqlDB, _ := db.DB()
 
 	// Jalankan migrasi di fungsi terpisah, path fleksibel
-	// runMigrations(sqlDB, migrationPath, logger)
+	runMigrations(sqlDB, migrationPath, logger)
 
 	// Verifikasi koneksi
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -76,12 +76,11 @@ func runMigrations(sqlDB *sql.DB, migrationsPath string, logger *log.Logger) {
 	driver, err := migPostgres.WithInstance(sqlDB, &migPostgres.Config{})
 	errors.HandlerWithOSExit(logger, err, "failed to initialize postgres driver")
 
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	exPath := filepath.Dir(ex)
-	migrationsPath = filepath.Join(exPath, migrationsPath)
+	// fallback: cari ke atas (root)
+	_, b, _, _ := runtime.Caller(0)
+	rootPath := filepath.Join(filepath.Dir(b), "../../")
+
+	migrationsPath = filepath.Join(rootPath, migrationsPath)
 
 	m, err := migrate.NewWithDatabaseInstance("file://"+migrationsPath, "postgres", driver)
 	errors.HandlerWithOSExit(logger, err, "failed to create migration instance")

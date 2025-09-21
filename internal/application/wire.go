@@ -28,7 +28,7 @@ type HandlerContainer struct {
 // Entry point buat bikin semua handler
 func InitializeServiceHandler(
 	db *gorm.DB,
-	redisClient *redis.Client,
+	redis *redis.Client,
 	rabbitConn *amqp091.Connection,
 	logger *log.Logger,
 	cfg *configs.Cfg,

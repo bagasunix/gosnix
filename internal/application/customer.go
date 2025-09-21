@@ -93,13 +93,9 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 	}
 
 	tx := c.repo.GetCustomer().GetConnection().(*gorm.DB).Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
 
 	if err = c.repo.GetCustomer().SaveTx(ctx, tx, customerBuild); err != nil {
+		tx.Rollback()
 		response.Code = fiber.StatusConflict
 		response.Message = "Gagal membuat pelanggan"
 		response.Errors = err.Error()
@@ -246,7 +242,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 	}
 
 	// Hapus cache Redis
-	if err = c.cache.GetCustiomerCache().DeleteByPattern(ctx, "customers:*"); err != nil {
+	if err = c.cache.GetCustomerCache().DeleteByPattern(ctx, "*"); err != nil {
 		response.Code = fiber.StatusConflict
 		response.Message = "Gagal membuat pelanggan"
 		response.Errors = err.Error()
@@ -332,7 +328,7 @@ func (c *customerService) DeleteCustomer(ctx context.Context, request *requests.
 
 	// 3. Hapus cache Redis
 	// Hapus cache detail customer
-	if err := c.cache.GetCustiomerCache().Delete(ctx, fmt.Sprintf("customers:%d", intId)); err != nil {
+	if err := c.cache.GetCustomerCache().Delete(ctx, intId); err != nil {
 		response.Code = fiber.StatusBadRequest
 		response.Message = "Data gagal dihapus"
 		response.Errors = err.Error()
@@ -340,7 +336,7 @@ func (c *customerService) DeleteCustomer(ctx context.Context, request *requests.
 	}
 
 	// Hapus cache list (opsional, pattern search)
-	if err := c.cache.GetCustiomerCache().DeleteByPattern(ctx, "customers:search=*"); err != nil {
+	if err := c.cache.GetCustomerCache().DeleteByPattern(ctx, "search=*"); err != nil {
 		response.Code = fiber.StatusBadRequest
 		response.Message = "Data gagal dihapus"
 		response.Errors = err.Error()
@@ -366,19 +362,18 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 	offset, limit := utils.CalculateOffsetAndLimit(intPage, intLimit)
 
 	// --- Redis key berdasarkan search, page, limit
-	cacheKey := fmt.Sprintf("customers:search=%s:page=%d:limit=%d", request.Search, intPage, intLimit)
+	cacheKey := fmt.Sprintf("search=%s:page=%d:limit=%d", request.Search, intPage, intLimit)
 
 	var custResponse []responses.CustomerResponse
 
 	// Cek Redis
 	// val, err := c.redis.Get(ctx, cacheKey).Result()
-	val, err := c.cache.GetCustiomerCache().Get(ctx, 5*time.Minute, cacheKey)
+	val, err := c.cache.GetCustomerCache().Get(ctx, 5*time.Minute, cacheKey)
 	if err == nil {
 		// Cache hit, unmarshal langsung
 		if err := json.Unmarshal([]byte(*val), &custResponse); err == nil {
 			// Hit, kembalikan response dengan paging
-			// totalItems, _ := c.redis.Get(ctx, "customers:count:search="+request.Search).Int() // optional cache count
-			totalItems, _ := c.cache.GetCustiomerCache().GetCount(ctx, "customers:count:search="+request.Search)
+			totalItems, _ := c.cache.GetCustomerCache().GetCount(ctx, "count", "search="+request.Search)
 			totalPages := (totalItems + limit - 1) / limit
 			response.Data = &custResponse
 			response.Paging = &responses.PageMetadata{
@@ -428,13 +423,13 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 
 	// Simpan ke Redis
 	data, _ := json.Marshal(custResponse)
-	if err = c.cache.GetCustiomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
+	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
 		response.Code = 400
 		response.Message = "Gagal menarik data"
 		response.Errors = err.Error()
 		return response
 	}
-	if err = c.cache.GetCustiomerCache().Set(ctx, 5*time.Minute, totalItems, "customers:count:search="+request.Search); err != nil {
+	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, totalItems, "count", "search="+request.Search); err != nil {
 		response.Code = 400
 		response.Message = "Gagal menarik data"
 		response.Errors = err.Error()
@@ -477,7 +472,6 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 
 	// --- Redis key berdasarkan customer ID
 	intCustID, _ := strconv.Atoi(request.ID)
-	cacheKey := fmt.Sprintf("customers:%d", intCustID)
 
 	if err := c.repo.GetCustomer().Updates(ctx, intCustID, mCustt); err != nil {
 		response.Code = fiber.StatusBadRequest
@@ -512,7 +506,7 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 	}
 
 	// Hapus cache detail
-	if err := c.cache.GetCustiomerCache().Delete(ctx, cacheKey); err != nil {
+	if err := c.cache.GetCustomerCache().Delete(ctx, intCustID); err != nil {
 		response.Code = fiber.StatusBadRequest
 		response.Message = "Gagal memperbarui pelanggan"
 		response.Errors = err.Error()
@@ -520,7 +514,7 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 	}
 
 	// 4. Hapus cache list (opsional)
-	if err := c.cache.GetCustiomerCache().DeleteByPattern(ctx, "customers:search=*"); err != nil {
+	if err := c.cache.GetCustomerCache().DeleteByPattern(ctx, "search=*"); err != nil {
 		response.Code = fiber.StatusBadRequest
 		response.Message = "Gagal memperbarui pelanggan"
 		response.Errors = err.Error()
@@ -544,11 +538,10 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 
 	paramID, _ := strconv.Atoi(request.Id.(string))
 	// --- Redis key berdasarkan customer ID
-	cacheKey := fmt.Sprintf("customers:%d", paramID)
 
 	//  Cek Redis dulu
 	resCust := new(responses.CustomerResponse)
-	val, err := c.cache.GetCustiomerCache().Get(ctx, cacheKey)
+	val, err := c.cache.GetCustomerCache().Get(ctx, paramID)
 	if err == nil {
 		// Cache hit, unmarshal JSON
 		if err := json.Unmarshal([]byte(*val), &resCust); err == nil {
@@ -593,7 +586,7 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 
 	// Simpan ke Redis dengan expire 5 menit
 	data, _ := json.Marshal(resCust)
-	if err = c.cache.GetCustiomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
+	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, data, paramID); err != nil {
 		response.Code = fiber.StatusBadRequest
 		response.Message = "Gagal menarik data"
 		response.Errors = err.Error()
@@ -627,7 +620,7 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 	//  Cek Redis dulu
 	var resVehicle []responses.VehicleResponse
 	// val, err := c.redis.Get(ctx, cacheKey).Result()
-	val, err := c.cache.GetCustiomerCache().Get(ctx, cacheKey)
+	val, err := c.cache.GetCustomerCache().Get(ctx, cacheKey)
 	if err == nil {
 		// Cache hit, unmarshal JSON
 		if err := json.Unmarshal([]byte(*val), &resVehicle); err == nil {
@@ -675,13 +668,13 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 
 	// Simpan ke Redis dengan expire 5 menit
 	data, _ := json.Marshal(resVehicle)
-	if err = c.cache.GetCustiomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
+	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
 		response.Code = 400
 		response.Message = "Gagal menarik data"
 		response.Errors = err.Error()
 		return response
 	}
-	if err = c.cache.GetCustiomerCache().Set(ctx, 5*time.Minute, totalItems, countKey); err != nil {
+	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, totalItems, countKey); err != nil {
 		response.Code = 400
 		response.Message = "Gagal menarik data"
 		response.Errors = err.Error()
@@ -700,6 +693,6 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 	return response
 }
 
-func NewCustomerService(logger *log.Logger, repo postgres.Repositories, cfg *configs.Cfg) service.CustomerService {
-	return &customerService{repo: repo, logger: logger, cfg: cfg}
+func NewCustomerService(logger *log.Logger, cache redis_client.RedisClient, repo postgres.Repositories, cfg *configs.Cfg) service.CustomerService {
+	return &customerService{repo: repo, logger: logger, cfg: cfg, cache: cache}
 }

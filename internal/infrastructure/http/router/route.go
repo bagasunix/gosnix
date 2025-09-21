@@ -8,17 +8,17 @@ import (
 
 	_ "github.com/bagasunix/gosnix/docs"
 	"github.com/bagasunix/gosnix/internal/infrastructure/http/handlers"
+	"github.com/bagasunix/gosnix/pkg/configs"
 )
 
 // SetupRoutes sekarang hanya menerima handler yang sudah di-inject
-func SetupRoutes(app *fiber.App, handlerHealth *handlers.HealthHandler, handlerCustomer *handlers.CustomerHandler) {
-	api := app.Group("/api")
+func SetupRoutes(app *fiber.App, cfg *configs.Cfg, handlerHealth *handlers.HealthHandler, handlerCustomer *handlers.CustomerHandler) {
 	// route swagger UI
-	api.Use("/swagger", func(c *fiber.Ctx) error {
+	app.Group(cfg.Server.Version).Use("/swagger", func(c *fiber.Ctx) error {
 		c.Set("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval'")
 		return c.Next()
 	})
-	api.Get("swagger/*", swagger.HandlerDefault)
-	SetupHealthRoutes(api, handlerHealth)
-	SetupCustomerRoutes(api, handlerCustomer)
+	app.Group(cfg.Server.Version).Get("/swagger/*", swagger.HandlerDefault)
+	SetupHealthRoutes(app.Group(cfg.Server.Version), handlerHealth)
+	SetupCustomerRoutes(app.Group(cfg.Server.Version+"/customers"), handlerCustomer)
 }
