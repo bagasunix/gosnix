@@ -366,13 +366,14 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 	cacheKey := fmt.Sprintf("search=%s:page=%d:limit=%d", request.Search, intPage, intLimit)
 
 	var custResponse []responses.CustomerResponse
+	var vehResponse []responses.VehicleResponse
 
 	// Cek Redis
 	// val, err := c.redis.Get(ctx, cacheKey).Result()
 	val, err := c.cache.GetCustomerCache().Get(ctx, 5*time.Minute, cacheKey)
 	if err == nil {
 		// Cache hit, unmarshal langsung
-		if err := json.Unmarshal([]byte(*val), &custResponse); err == nil {
+		if err := json.Unmarshal([]byte(val), &custResponse); err == nil {
 			// Hit, kembalikan response dengan paging
 			totalItems, _ := c.cache.GetCustomerCache().GetCount(ctx, "count", "search="+request.Search)
 			totalPages := (totalItems + limit - 1) / limit
@@ -410,6 +411,23 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 	// Map ke response
 	custResponse = make([]responses.CustomerResponse, 0, len(resCust.Value))
 	for _, v := range resCust.Value {
+		if len(v.Vehicles) != 0 {
+			vehResponse = make([]responses.VehicleResponse, 0, len(v.Vehicles))
+			// Check if phone & email already exists
+			for _, veh := range v.Vehicles {
+				vehResponse = append(vehResponse, responses.VehicleResponse{
+					ID:              veh.ID,
+					Brand:           veh.Brand,
+					Color:           veh.Color,
+					FuelType:        veh.FuelType,
+					MaxSpeed:        veh.MaxSpeed,
+					Model:           veh.Model,
+					PlateNo:         veh.PlateNo,
+					ManufactureYear: veh.ManufactureYear,
+					IsActive:        veh.IsActive,
+				})
+			}
+		}
 		custResponse = append(custResponse, responses.CustomerResponse{
 			ID:       v.ID,
 			Name:     v.Name,
@@ -419,6 +437,7 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 			Address:  v.Address,
 			Photo:    v.Photo,
 			IsActive: v.IsActive,
+			Vehicle:  vehResponse,
 		})
 	}
 
@@ -545,7 +564,7 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 	val, err := c.cache.GetCustomerCache().Get(ctx, paramID)
 	if err == nil {
 		// Cache hit, unmarshal JSON
-		if err := json.Unmarshal([]byte(*val), &resCust); err == nil {
+		if err := json.Unmarshal([]byte(val), &resCust); err == nil {
 			response.Data = &resCust
 			response.Message = "Pelanggan ditemukan"
 			response.Code = fiber.StatusOK

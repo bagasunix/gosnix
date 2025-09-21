@@ -79,3 +79,4 @@ type SuccessNoContentResponse struct {
 }
 
 type CustomerRegisterResponseWrapper SuccessCreatedResponse[CustomerResponse]
+type CustomerListResponseWrapper SuccessOKResponse[[]CustomerResponse]

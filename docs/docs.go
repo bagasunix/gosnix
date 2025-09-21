@@ -20,6 +20,64 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/customers": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menampilkan daftar customer dengan pagination dan optional search",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Mendapatkan daftar customer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Limit per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by name/email",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.CustomerListResponseWrapper"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorBadRequestResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorUnauthorizedResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -187,6 +245,25 @@ const docTemplate = `{
                 "secretKey": {
                     "type": "string",
                     "example": "s3cr3tK3y"
+                }
+            }
+        },
+        "responses.CustomerListResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/responses.CustomerResponse"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Success"
                 }
             }
         },

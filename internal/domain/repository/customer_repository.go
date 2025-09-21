@@ -29,7 +29,7 @@ type CustomerRepository interface {
 type CustomerCacheRepository interface {
 	Set(ctx context.Context, ttl time.Duration, data any, keys ...any) error
 	GetWithValue(ctx context.Context, keys ...any) (result *entities.Customer, err error)
-	Get(ctx context.Context, keys ...any) (result *string, err error)
+	Get(ctx context.Context, keys ...any) (result string, err error)
 	GetCount(ctx context.Context, keys ...any) (result int, err error)
 	Delete(ctx context.Context, keys ...any) error
 	DeleteByPattern(ctx context.Context, pattern string) error

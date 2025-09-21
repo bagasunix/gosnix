@@ -69,18 +69,18 @@ func (c *customerCache) GetCount(ctx context.Context, keys ...any) (result int, 
 	return val, nil
 }
 
-func (c *customerCache) Get(ctx context.Context, keys ...any) (result *string, err error) {
+func (c *customerCache) Get(ctx context.Context, keys ...any) (result string, err error) {
 	cacheKey := c.buildKey(keys...)
 
 	val, err := c.client.Get(ctx, cacheKey).Result()
 	if err == redis.Nil {
 		// Not found di cache bukan berarti error, return nil
-		return nil, nil
+		return "", nil
 	} else if err != nil {
-		return nil, errors.LogAndReturnError(c.logger, err, "failed to get redis cache", "key", cacheKey)
+		return "", errors.LogAndReturnError(c.logger, err, "failed to get redis cache", "key", cacheKey)
 	}
 
-	return &val, nil
+	return val, nil
 }
 
 func (c *customerCache) GetWithValue(ctx context.Context, keys ...any) (result *entities.Customer, err error) {

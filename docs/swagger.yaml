@@ -81,6 +81,19 @@ definitions:
         example: s3cr3tK3y
         type: string
     type: object
+  responses.CustomerListResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/responses.CustomerResponse'
+        type: array
+      message:
+        example: Success
+        type: string
+    type: object
   responses.CustomerRegisterResponseWrapper:
     properties:
       code:
@@ -244,6 +257,43 @@ info:
   version: "1.0"
 paths:
   /customers:
+    get:
+      consumes:
+      - application/json
+      description: Menampilkan daftar customer dengan pagination dan optional search
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: string
+      - description: Limit per page
+        in: query
+        name: limit
+        type: string
+      - description: Search by name/email
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.CustomerListResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.ErrorBadRequestResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/responses.ErrorUnauthorizedResponse'
+      security:
+      - BearerAuth: []
+      summary: Mendapatkan daftar customer
+      tags:
+      - Customer
     post:
       consumes:
       - application/json
