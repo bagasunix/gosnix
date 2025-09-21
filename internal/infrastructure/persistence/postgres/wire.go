@@ -13,6 +13,7 @@ type Repositories interface {
 	GetVehicle() repository.VehicleRepository
 	GetDeviceGPS() repository.DeviceRepository
 	GetVehicleDevice() repository.VehicleDeviceRepository
+	GetVehicleCategory() repository.VehicleCategoryRepository
 }
 
 type repo struct {
@@ -21,6 +22,12 @@ type repo struct {
 	vehicle       repository.VehicleRepository
 	device        repository.DeviceRepository
 	vehicleDevice repository.VehicleDeviceRepository
+	vehicleCat    repository.VehicleCategoryRepository
+}
+
+// GetVehicleCategory implements Repositories.
+func (r *repo) GetVehicleCategory() repository.VehicleCategoryRepository {
+	return r.vehicleCat
 }
 
 // GetVehicleDevice implements Repositories.
@@ -55,5 +62,6 @@ func New(logger *log.Logger, db *gorm.DB) Repositories {
 		vehicle:       NewGormVehicle(logger, db),
 		device:        NewGormDevice(logger, db),
 		vehicleDevice: NewGormVehicleDevice(logger, db),
+		vehicleCat:    NewGormVehicleCategory(logger, db),
 	}
 }

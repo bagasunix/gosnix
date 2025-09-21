@@ -40,13 +40,13 @@ func (g *gormProviderVehicle) SaveBatchTx(ctx context.Context, tx any, m []entit
 
 // Delete implements repository.VehicleRepository.
 func (g *gormProviderVehicle) Delete(ctx context.Context, id uuid.UUID) error {
-	return errors.ErrSomethingWrong(g.logger, g.db.WithContext(ctx).Where("id = ?", id).Updates(map[string]interface{}{"customer_status": 0, "deleted_at": time.Now()}).Error)
+	return errors.ErrSomethingWrong(g.logger, g.db.WithContext(ctx).Where("id = ?", id).Updates(map[string]interface{}{"is_active": 0, "deleted_at": time.Now()}).Error)
 
 }
 
 // FindByCustomer implements repository.VehicleRepository.
 func (g *gormProviderVehicle) FindByCustomer(ctx context.Context, customerID, limit, offset int, search string) (result base.SliceResult[*entities.Vehicle]) {
-	query := g.db.WithContext(ctx).Limit(limit).Offset(offset)
+	query := g.db.WithContext(ctx).Preload("Devices").Preload("Sessions").Preload("Locations").Limit(limit).Offset(offset)
 	if search != "" {
 		query = query.Where("brand LIKE ? OR model LIKE ? OR plate_no LIKE ? OR year LIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%", "%"+search+"%")
 	}
@@ -59,7 +59,7 @@ func (g *gormProviderVehicle) FindByCustomer(ctx context.Context, customerID, li
 
 // FindByParam implements repository.VehicleRepository.
 func (g *gormProviderVehicle) FindByParam(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.Vehicle]) {
-	result.Error = errors.ErrRecordNotFound(g.logger, g.GetModelName(), g.db.WithContext(ctx).Where(params).First(&result.Value).Error)
+	result.Error = errors.ErrRecordNotFound(g.logger, g.GetModelName(), g.db.WithContext(ctx).Preload("Devices").Preload("Sessions").Preload("Locations").Where(params).First(&result.Value).Error)
 	return result
 }
 
@@ -81,7 +81,6 @@ func (g *gormProviderVehicle) Save(ctx context.Context, v *entities.Vehicle) err
 // Update implements repository.VehicleRepository.
 func (g *gormProviderVehicle) Update(ctx context.Context, v *entities.Vehicle) error {
 	return errors.ErrDuplicateValue(g.logger, g.GetModelName(), g.db.WithContext(ctx).Where("id = ?", v.ID).Updates(v).Error)
-
 }
 
 func NewGormVehicle(logger *log.Logger, db *gorm.DB) repository.VehicleRepository {

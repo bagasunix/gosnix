@@ -96,7 +96,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		imeiSet := make(map[string]struct{}, len(request.Vehicle))
 
 		for _, v := range request.Vehicle {
-			checkVehicleCategory := c.repo.GetVehicle().FindByParam(ctx, map[string]any{"id": v.CategoryID})
+			checkVehicleCategory := c.repo.GetVehicleCategory().FindByParam(ctx, map[string]any{"id": v.CategoryID})
 			if checkVehicleCategory.Error != nil {
 				tx.Rollback()
 				response.Code = fiber.StatusConflict
@@ -106,6 +106,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			}
 			// Cek duplikat plat dalam request
 			if _, exists := platSet[v.PlateNo]; exists {
+				tx.Rollback()
 				response.Code = fiber.StatusBadRequest
 				response.Message = "Nomor plat duplikat dalam request"
 				response.Errors = "Plat " + v.PlateNo + " sudah ada di request"
@@ -116,6 +117,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			// Cek duplikat IMEI dalam request
 			if v.DeviceGPS.IMEI != "" {
 				if _, exists := imeiSet[v.DeviceGPS.IMEI]; exists {
+					tx.Rollback()
 					response.Code = fiber.StatusBadRequest
 					response.Message = "IMEI duplikat dalam request"
 					response.Errors = "IMEI " + v.DeviceGPS.IMEI + " sudah ada di request"
@@ -126,12 +128,14 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 				// Cek IMEI di database
 				checkImei := c.repo.GetDeviceGPS().FindByParam(ctx, map[string]interface{}{"imei": v.DeviceGPS.IMEI})
 				if checkImei.Value.IMEI == v.DeviceGPS.IMEI {
+					tx.Rollback()
 					response.Code = fiber.StatusConflict
 					response.Message = "Device GPS sudah terdaftar"
 					response.Errors = "IMEI " + errors.ERR_ALREADY_EXISTS
 					return response
 				}
 				if checkImei.Error != nil && !strings.Contains(checkImei.Error.Error(), "not found") {
+					tx.Rollback()
 					response.Code = fiber.StatusConflict
 					response.Message = "Validasi IMEI invalid"
 					response.Errors = checkImei.Error.Error()
@@ -142,12 +146,14 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			// Cek plat di database
 			checkPlat := c.repo.GetVehicle().FindByParam(ctx, map[string]interface{}{"plate_no": v.PlateNo})
 			if checkPlat.Value.PlateNo == v.PlateNo {
+				tx.Rollback()
 				response.Code = fiber.StatusConflict
 				response.Message = "Kendaraan sudah terdaftar"
 				response.Errors = "vehicle " + errors.ERR_ALREADY_EXISTS
 				return response
 			}
 			if checkPlat.Error != nil && !strings.Contains(checkPlat.Error.Error(), "not found") {
+				tx.Rollback()
 				response.Code = fiber.StatusConflict
 				response.Message = "Validasi vehicle invalid"
 				response.Errors = checkPlat.Error.Error()

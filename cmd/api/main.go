@@ -13,7 +13,7 @@ import (
 // @contact.email support@gosnix.local
 
 // @host localhost:8080
-// @BasePath /api
+// @BasePath /api/v1
 
 // @securityDefinitions.apikey BearerAuth
 // @in header
