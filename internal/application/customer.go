@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofrs/uuid"
 	"github.com/phuslu/log"
 	"gorm.io/gorm"
 
@@ -36,14 +34,14 @@ type customerService struct {
 // Create implements customer.CustomerUsecase.
 func (c *customerService) Create(ctx context.Context, request *requests.CreateCustomer) (response responses.BaseResponse[responses.CustomerResponse]) {
 	if request.Validate() != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "phone atau password salah, silahkan coba lagi"
 		response.Errors = request.Validate().Error()
 		return response
 	}
 	phone, err := utils.ValidatePhone(request.Phone)
 	if err != nil {
-		response.Code = fiber.StatusConflict
+		response.Code = 409
 		response.Message = "Validasi phone invalid"
 		response.Errors = err.Error()
 		return response
@@ -52,13 +50,13 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 	// Check if phone & email already exists
 	checkData := c.repo.GetCustomer().FindByPhoneOrEmail(ctx, *phone, request.Email)
 	if checkData.Value.Phone == *phone {
-		response.Code = fiber.StatusConflict
+		response.Code = 409
 		response.Message = "Phone dan email sudah terdaftar"
 		response.Errors = "phone " + errors.ERR_ALREADY_EXISTS + ", email " + errors.ERR_ALREADY_EXISTS
 		return response
 	}
 	if checkData.Error != nil && !strings.Contains(checkData.Error.Error(), "not found") {
-		response.Code = fiber.StatusConflict
+		response.Code = 409
 		response.Message = "Validasi phone invalid"
 		response.Errors = checkData.Error.Error()
 		return response
@@ -82,7 +80,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 
 	if err = c.repo.GetCustomer().SaveTx(ctx, tx, customerBuild); err != nil {
 		tx.Rollback()
-		response.Code = fiber.StatusConflict
+		response.Code = 409
 		response.Message = "Gagal membuat pelanggan"
 		response.Errors = err.Error()
 		return response
@@ -100,7 +98,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			checkVehicleCategory := c.repo.GetVehicleCategory().FindByParam(ctx, map[string]any{"id": v.CategoryID})
 			if checkVehicleCategory.Error != nil {
 				tx.Rollback()
-				response.Code = fiber.StatusConflict
+				response.Code = 409
 				response.Message = "Kategori kendaraan tidak ditemukan"
 				response.Errors = checkVehicleCategory.Error.Error()
 				return response
@@ -108,7 +106,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			// Cek duplikat plat dalam request
 			if _, exists := platSet[v.PlateNo]; exists {
 				tx.Rollback()
-				response.Code = fiber.StatusBadRequest
+				response.Code = 400
 				response.Message = "Nomor plat duplikat dalam request"
 				response.Errors = "Plat " + v.PlateNo + " sudah ada di request"
 				return response
@@ -119,7 +117,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			if v.DeviceGPS.IMEI != "" {
 				if _, exists := imeiSet[v.DeviceGPS.IMEI]; exists {
 					tx.Rollback()
-					response.Code = fiber.StatusBadRequest
+					response.Code = 400
 					response.Message = "IMEI duplikat dalam request"
 					response.Errors = "IMEI " + v.DeviceGPS.IMEI + " sudah ada di request"
 					return response
@@ -130,14 +128,14 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 				checkImei := c.repo.GetDeviceGPS().FindByParam(ctx, map[string]interface{}{"imei": v.DeviceGPS.IMEI})
 				if checkImei.Value.IMEI == v.DeviceGPS.IMEI {
 					tx.Rollback()
-					response.Code = fiber.StatusConflict
+					response.Code = 409
 					response.Message = "Device GPS sudah terdaftar"
 					response.Errors = "IMEI " + errors.ERR_ALREADY_EXISTS
 					return response
 				}
 				if checkImei.Error != nil && !strings.Contains(checkImei.Error.Error(), "not found") {
 					tx.Rollback()
-					response.Code = fiber.StatusConflict
+					response.Code = 409
 					response.Message = "Validasi IMEI invalid"
 					response.Errors = checkImei.Error.Error()
 					return response
@@ -148,14 +146,14 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			checkPlat := c.repo.GetVehicle().FindByParam(ctx, map[string]interface{}{"plate_no": v.PlateNo})
 			if checkPlat.Value.PlateNo == v.PlateNo {
 				tx.Rollback()
-				response.Code = fiber.StatusConflict
+				response.Code = 409
 				response.Message = "Kendaraan sudah terdaftar"
 				response.Errors = "vehicle " + errors.ERR_ALREADY_EXISTS
 				return response
 			}
 			if checkPlat.Error != nil && !strings.Contains(checkPlat.Error.Error(), "not found") {
 				tx.Rollback()
-				response.Code = fiber.StatusConflict
+				response.Code = 409
 				response.Message = "Validasi vehicle invalid"
 				response.Errors = checkPlat.Error.Error()
 				return response
@@ -197,7 +195,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		if err := c.repo.GetVehicle().SaveBatchTx(ctx, tx, vehicles); err != nil {
 			tx.Rollback()
 			return responses.BaseResponse[responses.CustomerResponse]{
-				Code:    fiber.StatusConflict,
+				Code:    409,
 				Message: "Gagal membuat kendaraan",
 				Errors:  err.Error(),
 			}
@@ -209,7 +207,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		if err := c.repo.GetDeviceGPS().SaveBatchTx(ctx, tx, devices); err != nil {
 			tx.Rollback()
 			return responses.BaseResponse[responses.CustomerResponse]{
-				Code:    fiber.StatusConflict,
+				Code:    409,
 				Message: "Gagal membuat device GPS",
 				Errors:  err.Error(),
 			}
@@ -229,7 +227,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		if err := c.repo.GetVehicleDevice().SaveBatchTx(ctx, tx, vehicleDevices); err != nil {
 			tx.Rollback()
 			return responses.BaseResponse[responses.CustomerResponse]{
-				Code:    fiber.StatusConflict,
+				Code:    409,
 				Message: "Gagal menghubungkan kendaraan dengan device",
 				Errors:  err.Error(),
 			}
@@ -237,7 +235,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 	}
 
 	if err = tx.Commit().Error; err != nil {
-		response.Code = fiber.StatusConflict
+		response.Code = 409
 		response.Message = "Gagal membuat pelanggan"
 		response.Errors = err.Error()
 		return response
@@ -245,7 +243,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 
 	// Hapus cache Redis
 	if err = c.cache.GetCustomerCache().DeleteByPattern(ctx, "*"); err != nil {
-		response.Code = fiber.StatusConflict
+		response.Code = 409
 		response.Message = "Gagal membuat pelanggan"
 		response.Errors = err.Error()
 		return response
@@ -297,7 +295,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		}
 	}
 
-	response.Code = fiber.StatusCreated
+	response.Code = 201
 	response.Message = "Sukses mendaftar"
 	response.Data = resBuild
 	return response
@@ -306,7 +304,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 // DeleteCustomer implements customer.CustomerUsecase.
 func (c *customerService) DeleteCustomer(ctx context.Context, request *requests.EntityId) (response responses.BaseResponse[any]) {
 	if err := request.Validate(); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Validasi error"
 		response.Errors = request.Validate().Error()
 		return response
@@ -315,14 +313,14 @@ func (c *customerService) DeleteCustomer(ctx context.Context, request *requests.
 	intId, _ := strconv.Atoi(request.Id.(string))
 	result := c.repo.GetCustomer().FindByParam(ctx, map[string]any{"id": intId})
 	if result.Error != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Data tidak ditemukan"
 		response.Errors = result.Error.Error()
 		return response
 	}
 
 	if err := c.repo.GetCustomer().Delete(ctx, intId); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Data gagal dihapus"
 		response.Errors = err.Error()
 		return response
@@ -331,7 +329,7 @@ func (c *customerService) DeleteCustomer(ctx context.Context, request *requests.
 	// 3. Hapus cache Redis
 	// Hapus cache detail customer
 	if err := c.cache.GetCustomerCache().Delete(ctx, intId); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Data gagal dihapus"
 		response.Errors = err.Error()
 		return response
@@ -339,44 +337,42 @@ func (c *customerService) DeleteCustomer(ctx context.Context, request *requests.
 
 	// Hapus cache list (opsional, pattern search)
 	if err := c.cache.GetCustomerCache().DeleteByPattern(ctx, "search=*"); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Data gagal dihapus"
 		response.Errors = err.Error()
 		return response
 	}
 
 	response.Message = "Data berhasil dihapus"
-	response.Code = fiber.StatusOK
+	response.Code = 200
 	return response
 }
 
 // ListCustomer implements customer.CustomerUsecase.
 func (c *customerService) ListCustomer(ctx context.Context, request *requests.BaseRequest) (response responses.BaseResponse[[]responses.CustomerResponse]) {
+	// --- Validasi request
 	if err := request.Validate(); err != nil {
 		response.Code = 400
 		response.Message = "Error Validasi"
 		response.Errors = err.Error()
 		return response
 	}
+
 	intPage, _ := strconv.Atoi(request.Page)
 	intLimit, _ := strconv.Atoi(request.Limit)
-
 	offset, limit := utils.CalculateOffsetAndLimit(intPage, intLimit)
 
-	// --- Redis key berdasarkan search, page, limit
-	cacheKey := fmt.Sprintf("search=%s:page=%d:limit=%d", request.Search, intPage, intLimit)
+	// --- Redis key
+	cacheKey := fmt.Sprintf("data:search=%s:page=%d:limit=%d", request.Search, intPage, intLimit)
+	countKey := fmt.Sprintf("count:search=%s", request.Search)
 
 	var custResponse []responses.CustomerResponse
-	var vehResponse []responses.VehicleResponse
 
-	// Cek Redis
-	// val, err := c.redis.Get(ctx, cacheKey).Result()
-	val, err := c.cache.GetCustomerCache().Get(ctx, cacheKey)
-	if err == nil {
-		// Cache hit, unmarshal langsung
+	// --- Cek Redis
+	if val, err := c.cache.GetCustomerCache().Get(ctx, cacheKey); err == nil {
 		if err := json.Unmarshal([]byte(val), &custResponse); err == nil {
-			// Hit, kembalikan response dengan paging
-			totalItems, _ := c.cache.GetCustomerCache().GetCount(ctx, "count", "search="+request.Search)
+			// Ambil totalItems dari cache count
+			totalItems, _ := c.cache.GetCustomerCache().GetCount(ctx, countKey)
 			totalPages := (totalItems + limit - 1) / limit
 			response.Data = &custResponse
 			response.Paging = &responses.PageMetadata{
@@ -385,13 +381,13 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 				TotalItem: totalItems,
 				TotalPage: totalPages,
 			}
-			response.Message = "Inquiry pelanggan berhasil"
-			response.Code = fiber.StatusOK
+			response.Message = "Inquiry pelanggan berhasil (cache)"
+			response.Code = 200
 			return response
 		}
 	}
 
-	//  Ambil dari DB
+	// --- Ambil dari DB
 	resCust := c.repo.GetCustomer().FindAll(ctx, limit, offset, request.Search)
 	if resCust.Error != nil {
 		response.Code = 400
@@ -399,58 +395,58 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 		response.Errors = resCust.Error.Error()
 		return response
 	}
-	// Calculate total items and total pages
+
+	// --- Hitung total items
 	totalItems, err := c.repo.GetCustomer().CountCustomer(ctx, request.Search)
 	if err != nil {
 		response.Code = 400
-		response.Message = "Gagal menarik data"
+		response.Message = "Gagal menghitung data"
 		response.Errors = err.Error()
 		return response
 	}
 	totalPages := (totalItems + limit - 1) / limit
 
-	// Map ke response
+	// --- Mapping ke response
 	custResponse = make([]responses.CustomerResponse, 0, len(resCust.Value))
 	for _, v := range resCust.Value {
-		if len(v.Vehicles) != 0 {
-			vehResponse = make([]responses.VehicleResponse, 0, len(v.Vehicles))
-			// Check if phone & email already exists
-			for _, veh := range v.Vehicles {
-				// buat 1 object VehicleResponse
-				vResp := responses.VehicleResponse{
-					ID:              veh.ID,
-					Brand:           veh.Brand,
-					Color:           veh.Color,
-					FuelType:        veh.FuelType,
-					MaxSpeed:        veh.MaxSpeed,
-					Model:           veh.Model,
-					PlateNo:         veh.PlateNo,
-					ManufactureYear: veh.ManufactureYear,
-					IsActive:        veh.IsActive,
-				}
+		vehResponse := make([]responses.VehicleResponse, 0, len(v.Vehicles)) // ✅ reset tiap customer
 
-				// mapping devices
-				for _, vd := range veh.Devices {
-					if vd.Device.ID != uuid.Nil {
-						vResp.Device = &responses.DeviceGPSResponse{
-							ID:            vd.Device.ID,
-							IMEI:          vd.Device.IMEI,
-							Brand:         vd.Device.Brand,
-							Model:         vd.Device.Model,
-							Protocol:      vd.Device.Protocol,
-							IsActive:      vd.IsActive,
-							InstalledAt:   vd.StartTime,
-							UninstalledAt: vd.EndTime,
-							CreatedAt:     vd.Device.CreatedAt,
-						}
-						break // ambil 1 device aktif saja
-					}
-				}
-
-				// masukkan ke slice
-				vehResponse = append(vehResponse, vResp)
+		for _, veh := range v.Vehicles {
+			vResp := responses.VehicleResponse{
+				ID:              veh.ID,
+				Brand:           veh.Brand,
+				Color:           veh.Color,
+				Category:        veh.Category.Name,
+				FuelType:        veh.FuelType,
+				MaxSpeed:        veh.MaxSpeed,
+				Model:           veh.Model,
+				PlateNo:         veh.PlateNo,
+				ManufactureYear: veh.ManufactureYear,
+				IsActive:        veh.IsActive,
 			}
+
+			// --- mapping device aktif
+			for _, vd := range veh.Devices {
+				if vd.IsActive == 1 {
+					vResp.Device = &responses.DeviceGPSResponse{
+						ID:            vd.Device.ID,
+						IMEI:          vd.Device.IMEI,
+						Brand:         vd.Device.Brand,
+						Model:         vd.Device.Model,
+						Protocol:      vd.Device.Protocol,
+						IsActive:      vd.IsActive,
+						InstalledAt:   vd.StartTime,
+						UninstalledAt: vd.EndTime,
+						CreatedAt:     vd.Device.CreatedAt,
+						UpdatedAt:     vd.UpdatedAt,
+					}
+					break
+				}
+			}
+
+			vehResponse = append(vehResponse, vResp)
 		}
+
 		custResponse = append(custResponse, responses.CustomerResponse{
 			ID:       v.ID,
 			Name:     v.Name,
@@ -464,21 +460,17 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 		})
 	}
 
-	// Simpan ke Redis
-	data, _ := json.Marshal(custResponse)
-	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
-		response.Code = 400
-		response.Message = "Gagal menarik data"
-		response.Errors = err.Error()
-		return response
+	// --- Simpan ke Redis (fallback kalau gagal)
+	if data, err := json.Marshal(custResponse); err == nil {
+		if err := c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, data, cacheKey); err != nil {
+			log.Printf("[WARN] gagal set cache data: %v", err)
+		}
 	}
-	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, totalItems, "count", "search="+request.Search); err != nil {
-		response.Code = 400
-		response.Message = "Gagal menarik data"
-		response.Errors = err.Error()
-		return response
+	if err := c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, totalItems, countKey); err != nil {
+		log.Printf("[WARN] gagal set cache count: %v", err)
 	}
 
+	// --- Response akhir
 	response.Data = &custResponse
 	response.Paging = &responses.PageMetadata{
 		Page:      intPage,
@@ -487,14 +479,14 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 		TotalPage: totalPages,
 	}
 	response.Message = "Inquiry pelanggan berhasil"
-	response.Code = fiber.StatusOK
+	response.Code = 200
 	return response
 }
 
 // UpdateCustomer implements customer.CustomerUsecase.
 func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.UpdateCustomer) (response responses.BaseResponse[*responses.CustomerResponse]) {
 	if err := request.Validate(); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Validasi error"
 		response.Errors = request.Validate().Error()
 		return response
@@ -502,7 +494,7 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 
 	checkCust := c.repo.GetCustomer().FindByParam(ctx, map[string]any{"id": request.ID})
 	if checkCust.Error != nil {
-		response.Code = fiber.StatusConflict
+		response.Code = 409
 		response.Message = "Pelanggan tidak ditemukan"
 		response.Errors = checkCust.Error.Error()
 		return response
@@ -517,7 +509,7 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 	intCustID, _ := strconv.Atoi(request.ID)
 
 	if err := c.repo.GetCustomer().Updates(ctx, intCustID, mCustt); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Gagal memperbarui pelanggan"
 		response.Errors = err.Error()
 		return response
@@ -550,7 +542,7 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 
 	// Hapus cache detail
 	if err := c.cache.GetCustomerCache().Delete(ctx, intCustID); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Gagal memperbarui pelanggan"
 		response.Errors = err.Error()
 		return response
@@ -558,14 +550,14 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 
 	// 4. Hapus cache list (opsional)
 	if err := c.cache.GetCustomerCache().DeleteByPattern(ctx, "search=*"); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Gagal memperbarui pelanggan"
 		response.Errors = err.Error()
 		return response
 	}
 
 	response.Data = &resCust
-	response.Code = fiber.StatusOK
+	response.Code = 200
 	response.Message = "Berhsail memperbarui pelanggan"
 	return response
 }
@@ -573,7 +565,7 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 // ViewCustomer implements customer.CustomerUsecase.
 func (c *customerService) ViewCustomer(ctx context.Context, request *requests.EntityId) (response responses.BaseResponse[*responses.CustomerResponse]) {
 	if err := request.Validate(); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Validasi error"
 		response.Errors = err.Error()
 		return response
@@ -590,14 +582,14 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 		if err := json.Unmarshal([]byte(val), &resCust); err == nil {
 			response.Data = &resCust
 			response.Message = "Pelanggan ditemukan"
-			response.Code = fiber.StatusOK
+			response.Code = 200
 			return response
 		}
 	}
 
 	checkCustomer := c.repo.GetCustomer().FindByParam(ctx, map[string]any{"id": paramID})
 	if checkCustomer.Error != nil {
-		response.Code = fiber.StatusNotFound
+		response.Code = 404
 		response.Message = "Pelanggan tidak ditemukan"
 		response.Errors = checkCustomer.Error.Error()
 		return response
@@ -630,7 +622,7 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 	// Simpan ke Redis dengan expire 5 menit
 	data, _ := json.Marshal(resCust)
 	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, data, paramID); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Gagal menarik data"
 		response.Errors = err.Error()
 		return response
@@ -638,7 +630,7 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 
 	response.Data = &resCust
 	response.Message = "Pelanggan ditemukan"
-	response.Code = fiber.StatusOK
+	response.Code = 200
 
 	return response
 }
@@ -646,7 +638,7 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 // ViewCustomerWithVehicle implements customer.CustomerUsecase.
 func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *requests.BaseVehicle) (response responses.BaseResponse[[]responses.VehicleResponse]) {
 	if err := request.Validate(); err != nil {
-		response.Code = fiber.StatusBadRequest
+		response.Code = 400
 		response.Message = "Validasi error"
 		response.Errors = err.Error()
 		return response
@@ -669,7 +661,7 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 		if err := json.Unmarshal([]byte(*val), &resVehicle); err == nil {
 			response.Data = &resVehicle
 			response.Message = "Inquiry kendaraan berhasil"
-			response.Code = fiber.StatusOK
+			response.Code = 200
 			return response
 		}
 	}
@@ -732,7 +724,7 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 		TotalPage: totalPages,
 	}
 	response.Message = "Inquiry kendaraan berhasil"
-	response.Code = fiber.StatusOK
+	response.Code = 200
 	return response
 }
 
