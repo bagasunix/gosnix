@@ -45,7 +45,7 @@ func (g *gormProviderCustomer) Delete(ctx context.Context, id int) error {
 
 // FindAll implements entities.Repository.
 func (g *gormProviderCustomer) FindAll(ctx context.Context, limit int, offset int, search string) (result base.SliceResult[*entities.Customer]) {
-	query := g.db.WithContext(ctx).Preload("Vehicles").Limit(limit).Offset(offset)
+	query := g.db.WithContext(ctx).Preload("Vehicles.Devices.Device").Limit(limit).Offset(offset)
 	if search != "" {
 		query = query.Where("name LIKE ? OR email LIKE ?", "%"+search+"%", "%"+search+"%")
 	}
@@ -55,7 +55,7 @@ func (g *gormProviderCustomer) FindAll(ctx context.Context, limit int, offset in
 
 // FindByParams implements entities.Repository.
 func (g *gormProviderCustomer) FindByParam(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.Customer]) {
-	result.Error = errors.ErrRecordNotFound(g.logger, g.GetModelName(), g.db.WithContext(ctx).Preload("Vehicles").Where(params).First(&result.Value).Error)
+	result.Error = errors.ErrRecordNotFound(g.logger, g.GetModelName(), g.db.WithContext(ctx).Preload("Vehicles.Devices.Device").Where(params).First(&result.Value).Error)
 	return result
 }
 

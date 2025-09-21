@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofrs/uuid"
 	"github.com/phuslu/log"
 	"gorm.io/gorm"
 
@@ -370,7 +371,7 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 
 	// Cek Redis
 	// val, err := c.redis.Get(ctx, cacheKey).Result()
-	val, err := c.cache.GetCustomerCache().Get(ctx, 5*time.Minute, cacheKey)
+	val, err := c.cache.GetCustomerCache().Get(ctx, cacheKey)
 	if err == nil {
 		// Cache hit, unmarshal langsung
 		if err := json.Unmarshal([]byte(val), &custResponse); err == nil {
@@ -415,7 +416,8 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 			vehResponse = make([]responses.VehicleResponse, 0, len(v.Vehicles))
 			// Check if phone & email already exists
 			for _, veh := range v.Vehicles {
-				vehResponse = append(vehResponse, responses.VehicleResponse{
+				// buat 1 object VehicleResponse
+				vResp := responses.VehicleResponse{
 					ID:              veh.ID,
 					Brand:           veh.Brand,
 					Color:           veh.Color,
@@ -425,7 +427,28 @@ func (c *customerService) ListCustomer(ctx context.Context, request *requests.Ba
 					PlateNo:         veh.PlateNo,
 					ManufactureYear: veh.ManufactureYear,
 					IsActive:        veh.IsActive,
-				})
+				}
+
+				// mapping devices
+				for _, vd := range veh.Devices {
+					if vd.Device.ID != uuid.Nil {
+						vResp.Device = &responses.DeviceGPSResponse{
+							ID:            vd.Device.ID,
+							IMEI:          vd.Device.IMEI,
+							Brand:         vd.Device.Brand,
+							Model:         vd.Device.Model,
+							Protocol:      vd.Device.Protocol,
+							IsActive:      vd.IsActive,
+							InstalledAt:   vd.StartTime,
+							UninstalledAt: vd.EndTime,
+							CreatedAt:     vd.Device.CreatedAt,
+						}
+						break // ambil 1 device aktif saja
+					}
+				}
+
+				// masukkan ke slice
+				vehResponse = append(vehResponse, vResp)
 			}
 		}
 		custResponse = append(custResponse, responses.CustomerResponse{
