@@ -25,10 +25,10 @@ func NewCustomerHandler(service service.CustomerService) *CustomerHandler {
 // @Accept  json
 // @Produce  json
 // @Param   request body requests.CreateCustomer true "Customer Request"
-// @Success 200 {object} responses.BaseResponseCustomer
-// @Failure 400 {object} responses.BaseResponseSwagger
-// @Failure 401 {object} responses.BaseResponseSwagger
-// @Failure 409 {object} responses.BaseResponseSwagger
+// @Success 201 {object} responses.CustomerRegisterResponseWrapper
+// @Failure 400 {object} responses.ErrorBadRequestResponse
+// @Failure 401 {object} responses.ErrorUnauthorizedResponse
+// @Failure 409 {object} responses.ErrorConflictResponse
 // @Router /customers [post]
 // @Security BearerAuth
 func (ac *CustomerHandler) Create(ctx *fiber.Ctx) error {
@@ -49,18 +49,6 @@ func (ac *CustomerHandler) Create(ctx *fiber.Ctx) error {
 	return ctx.Status(response.Code).JSON(response)
 }
 
-// ViewCustomer godoc
-// @Summary Mendapatkan detail customer
-// @Description Menampilkan detail customer berdasarkan ID
-// @Tags Customer
-// @Accept  json
-// @Produce  json
-// @Param   id   path int true "Customer ID"
-// @Success 200 {object} responses.BaseResponseCustomer
-// @Failure 400 {object} responses.BaseResponseSwagger
-// @Failure 404 {object} responses.BaseResponseSwagger
-// @Router /customers/{id} [get]
-// @Security BearerAuth
 func (c *CustomerHandler) ViewCustomer(ctx *fiber.Ctx) error {
 	request := new(requests.EntityId)
 	var response responses.BaseResponse[*responses.CustomerResponse]

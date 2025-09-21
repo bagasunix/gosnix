@@ -9,14 +9,14 @@ import (
 )
 
 type CreateCustomer struct {
-	Name     string     `json:"name"`
-	Sex      string     `json:"sex"`
-	DOB      *time.Time `json:"dob"`
-	Email    string     `json:"email"`
-	Phone    string     `json:"phone"`
-	Password string     `json:"password"`
-	Address  string     `json:"address"`
-	Photo    string     `json:"photo"`
+	Name     string     `json:"name" example:"John Doe"`
+	Sex      string     `json:"sex" example:"1"`
+	DOB      *time.Time `json:"dob" example:"1990-01-01"`
+	Email    string     `json:"email" example:"demo1@gmail.com"`
+	Phone    string     `json:"phone" example:"081234567890"`
+	Password string     `json:"password" example:"password123"`
+	Address  string     `json:"address" example:"Jl. Merdeka No. 123, Jakarta"`
+	Photo    string     `json:"photo" example:"https://example.com/photo.jpg"`
 
 	Vehicle []CreateVehicle `json:"vehicle,omitempty"`
 }

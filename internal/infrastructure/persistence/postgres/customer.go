@@ -18,6 +18,12 @@ type gormProviderCustomer struct {
 	logger *log.Logger
 }
 
+// FindByPhoneOrEmail implements repository.CustomerRepository.
+func (g *gormProviderCustomer) FindByPhoneOrEmail(ctx context.Context, phone string, email string) (result base.SingleResult[*entities.Customer]) {
+	result.Error = errors.ErrRecordNotFound(g.logger, g.GetModelName(), g.db.WithContext(ctx).Preload("Vehicles").Where("phone = ? OR email = ?", phone, email).First(&result.Value).Error)
+	return result
+}
+
 // CountCustomer implements entities.Customer .Repository.
 func (g *gormProviderCustomer) CountCustomer(ctx context.Context, search string) (int, error) {
 	var count int64
@@ -48,7 +54,7 @@ func (g *gormProviderCustomer) FindAll(ctx context.Context, limit int, offset in
 }
 
 // FindByParams implements entities.Repository.
-func (g *gormProviderCustomer) FindByParams(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.Customer]) {
+func (g *gormProviderCustomer) FindByParam(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.Customer]) {
 	result.Error = errors.ErrRecordNotFound(g.logger, g.GetModelName(), g.db.WithContext(ctx).Preload("Vehicles").Where(params).First(&result.Value).Error)
 	return result
 }

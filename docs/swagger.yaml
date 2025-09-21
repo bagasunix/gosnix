@@ -1,4 +1,238 @@
 basePath: /api
+definitions:
+  requests.CreateCustomer:
+    properties:
+      address:
+        example: Jl. Merdeka No. 123, Jakarta
+        type: string
+      dob:
+        example: "1990-01-01"
+        type: string
+      email:
+        example: demo1@gmail.com
+        type: string
+      name:
+        example: John Doe
+        type: string
+      password:
+        example: password123
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      photo:
+        example: https://example.com/photo.jpg
+        type: string
+      sex:
+        example: "1"
+        type: string
+      vehicle:
+        items:
+          $ref: '#/definitions/requests.CreateVehicle'
+        type: array
+    type: object
+  requests.CreateVehicle:
+    properties:
+      brand:
+        example: Toyota
+        type: string
+      category_id:
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        type: string
+      color:
+        example: Hitam
+        type: string
+      device_gps:
+        $ref: '#/definitions/requests.RegistrationGPS'
+      fuel_type:
+        example: Bensin
+        type: string
+      manufacture_year:
+        example: 2020
+        type: integer
+      max_speed:
+        example: 180
+        type: integer
+      model:
+        example: Avanza
+        type: string
+      plate_no:
+        example: B 1234 ABC
+        type: string
+      vin:
+        example: 1HGCM82633A123456
+        type: string
+    type: object
+  requests.RegistrationGPS:
+    properties:
+      brand:
+        example: Xiaomi
+        type: string
+      imei:
+        example: "123456789012345"
+        type: string
+      model:
+        example: Mi Band 5
+        type: string
+      protocol:
+        example: TCP
+        type: string
+      secretKey:
+        example: s3cr3tK3y
+        type: string
+    type: object
+  responses.CustomerRegisterResponseWrapper:
+    properties:
+      code:
+        example: 201
+        type: integer
+      data:
+        $ref: '#/definitions/responses.CustomerResponse'
+      message:
+        example: Created
+        type: string
+    type: object
+  responses.CustomerResponse:
+    properties:
+      address:
+        example: Jl. Merdeka No. 123, Jakarta
+        type: string
+      created_at:
+        example: "2023-10-01T12:00:00Z"
+        type: string
+      deleted_at:
+        example: 2023-10-03T12:00:00Z,omitempty
+        type: string
+      email:
+        example: demo1@gmail.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_active:
+        example: 1
+        type: integer
+      name:
+        example: John Doe
+        type: string
+      phone:
+        example: "+6281234567890"
+        type: string
+      photo:
+        example: https://example.com/photo.jpg
+        type: string
+      sex:
+        example: 1
+        type: integer
+      updated_at:
+        example: "2023-10-02T12:00:00Z"
+        type: string
+      vehicle:
+        items:
+          $ref: '#/definitions/responses.VehicleResponse'
+        type: array
+    type: object
+  responses.DeviceGPSResponse:
+    properties:
+      brand:
+        example: Garmin
+        type: string
+      created_at:
+        example: "2023-10-01T10:00:00Z"
+        type: string
+      id:
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        type: string
+      imei:
+        example: "123456789012345"
+        type: string
+      installed_at:
+        example: "2023-10-01T10:00:00Z"
+        type: string
+      is_active:
+        example: 1
+        type: integer
+      model:
+        example: GLO 2
+        type: string
+      protocol:
+        example: NMEA
+        type: string
+      uninstalled_at:
+        example: "2023-12-01T10:00:00Z"
+        type: string
+      updated_at:
+        example: "2023-11-01T10:00:00Z"
+        type: string
+    type: object
+  responses.ErrorBadRequestResponse:
+    properties:
+      code:
+        example: 400
+        type: integer
+      error:
+        example: invalid request body
+        type: string
+      message:
+        example: Bad Request
+        type: string
+    type: object
+  responses.ErrorConflictResponse:
+    properties:
+      code:
+        example: 409
+        type: integer
+      error:
+        example: duplicate data
+        type: string
+      message:
+        example: Conflict
+        type: string
+    type: object
+  responses.ErrorUnauthorizedResponse:
+    properties:
+      code:
+        example: 401
+        type: integer
+      error:
+        example: missing or invalid token
+        type: string
+      message:
+        example: Unauthorized
+        type: string
+    type: object
+  responses.VehicleResponse:
+    properties:
+      brand:
+        example: Toyota
+        type: string
+      color:
+        example: Hitam
+        type: string
+      device:
+        $ref: '#/definitions/responses.DeviceGPSResponse'
+      fuel_type:
+        example: Bensin
+        type: string
+      id:
+        example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        type: string
+      is_active:
+        example: 1
+        type: integer
+      manufacture_year:
+        example: 2020
+        type: integer
+      max_speed:
+        example: 180
+        type: integer
+      model:
+        example: Avanza
+        type: string
+      plate_no:
+        example: B 1234 ABC
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -8,7 +242,43 @@ info:
   termsOfService: http://swagger.io/terms/
   title: Gosnix API
   version: "1.0"
-paths: {}
+paths:
+  /customers:
+    post:
+      consumes:
+      - application/json
+      description: Membuat data customer baru beserta kendaraan opsional
+      parameters:
+      - description: Customer Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CreateCustomer'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/responses.CustomerRegisterResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.ErrorBadRequestResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/responses.ErrorUnauthorizedResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/responses.ErrorConflictResponse'
+      security:
+      - BearerAuth: []
+      summary: Membuat customer baru
+      tags:
+      - Customer
 securityDefinitions:
   BearerAuth:
     in: header

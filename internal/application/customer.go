@@ -48,33 +48,18 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		return response
 	}
 
-	// Check if phone already exists
-	checkPhone := c.repo.GetCustomer().FindByParams(ctx, map[string]any{"phone": *phone})
-	if checkPhone.Value.Phone == *phone {
+	// Check if phone & email already exists
+	checkData := c.repo.GetCustomer().FindByPhoneOrEmail(ctx, *phone, request.Email)
+	if checkData.Value.Phone == *phone {
 		response.Code = fiber.StatusConflict
-		response.Message = "Phone sudah terdaftar"
-		response.Errors = "phone " + errors.ERR_ALREADY_EXISTS
+		response.Message = "Phone dan email sudah terdaftar"
+		response.Errors = "phone " + errors.ERR_ALREADY_EXISTS + ", email " + errors.ERR_ALREADY_EXISTS
 		return response
 	}
-	if checkPhone.Error != nil && !strings.Contains(checkPhone.Error.Error(), "not found") {
+	if checkData.Error != nil && !strings.Contains(checkData.Error.Error(), "not found") {
 		response.Code = fiber.StatusConflict
 		response.Message = "Validasi phone invalid"
-		response.Errors = checkPhone.Error.Error()
-		return response
-	}
-
-	// Check if email already exists
-	checkEmail := c.repo.GetCustomer().FindByParams(ctx, map[string]any{"email": request.Email})
-	if checkEmail.Value.Email == request.Email {
-		response.Code = fiber.StatusConflict
-		response.Message = "Email sudah terdaftar"
-		response.Errors = "email " + errors.ERR_ALREADY_EXISTS
-		return response
-	}
-	if checkEmail.Error != nil && !strings.Contains(checkEmail.Error.Error(), "not found") {
-		response.Code = fiber.StatusConflict
-		response.Message = "Validasi email invalid"
-		response.Errors = checkEmail.Error.Error()
+		response.Errors = checkData.Error.Error()
 		return response
 	}
 
@@ -111,6 +96,14 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		imeiSet := make(map[string]struct{}, len(request.Vehicle))
 
 		for _, v := range request.Vehicle {
+			checkVehicleCategory := c.repo.GetVehicle().FindByParam(ctx, map[string]any{"id": v.CategoryID})
+			if checkVehicleCategory.Error != nil {
+				tx.Rollback()
+				response.Code = fiber.StatusConflict
+				response.Message = "Kategori kendaraan tidak ditemukan"
+				response.Errors = checkVehicleCategory.Error.Error()
+				return response
+			}
 			// Cek duplikat plat dalam request
 			if _, exists := platSet[v.PlateNo]; exists {
 				response.Code = fiber.StatusBadRequest
@@ -131,7 +124,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 				imeiSet[v.DeviceGPS.IMEI] = struct{}{}
 
 				// Cek IMEI di database
-				checkImei := c.repo.GetDeviceGPS().FindByParams(ctx, map[string]interface{}{"imei": v.DeviceGPS.IMEI})
+				checkImei := c.repo.GetDeviceGPS().FindByParam(ctx, map[string]interface{}{"imei": v.DeviceGPS.IMEI})
 				if checkImei.Value.IMEI == v.DeviceGPS.IMEI {
 					response.Code = fiber.StatusConflict
 					response.Message = "Device GPS sudah terdaftar"
@@ -268,7 +261,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		resBuild.Vehicle = make([]responses.VehicleResponse, 0, len(vehicles))
 		for i, v := range vehicles {
 			vehicleResponse := responses.VehicleResponse{
-				ID:              v.ID.String(),
+				ID:              v.ID,
 				Brand:           v.Brand,
 				Color:           v.Color,
 				FuelType:        v.FuelType,
@@ -282,7 +275,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 			// Tambahkan informasi device jika ada
 			if i < len(devices) {
 				vehicleResponse.Device = &responses.DeviceGPSResponse{
-					ID:          devices[i].ID.String(),
+					ID:          devices[i].ID,
 					IMEI:        devices[i].IMEI,
 					Brand:       devices[i].Brand,
 					Model:       devices[i].Model,
@@ -297,7 +290,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		}
 	}
 
-	response.Code = fiber.StatusOK
+	response.Code = fiber.StatusCreated
 	response.Message = "Sukses mendaftar"
 	response.Data = resBuild
 	return response
@@ -313,7 +306,7 @@ func (c *customerService) DeleteCustomer(ctx context.Context, request *requests.
 	}
 
 	intId, _ := strconv.Atoi(request.Id.(string))
-	result := c.repo.GetCustomer().FindByParams(ctx, map[string]any{"id": intId})
+	result := c.repo.GetCustomer().FindByParam(ctx, map[string]any{"id": intId})
 	if result.Error != nil {
 		response.Code = fiber.StatusBadRequest
 		response.Message = "Data tidak ditemukan"
@@ -459,7 +452,7 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 		return response
 	}
 
-	checkCust := c.repo.GetCustomer().FindByParams(ctx, map[string]any{"id": request.ID})
+	checkCust := c.repo.GetCustomer().FindByParam(ctx, map[string]any{"id": request.ID})
 	if checkCust.Error != nil {
 		response.Code = fiber.StatusConflict
 		response.Message = "Pelanggan tidak ditemukan"
@@ -554,7 +547,7 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 		}
 	}
 
-	checkCustomer := c.repo.GetCustomer().FindByParams(ctx, map[string]any{"id": paramID})
+	checkCustomer := c.repo.GetCustomer().FindByParam(ctx, map[string]any{"id": paramID})
 	if checkCustomer.Error != nil {
 		response.Code = fiber.StatusNotFound
 		response.Message = "Pelanggan tidak ditemukan"
@@ -655,7 +648,7 @@ func (c *customerService) ViewCustomerWithVehicle(ctx context.Context, request *
 		resVehicle = make([]responses.VehicleResponse, 0, len(checkVehicle.Value))
 		for _, v := range checkVehicle.Value {
 			resVehicle = append(resVehicle, responses.VehicleResponse{
-				ID:              v.ID.String(),
+				ID:              v.ID,
 				Brand:           v.Brand,
 				Color:           v.Color,
 				FuelType:        v.FuelType,

@@ -15,7 +15,7 @@ type DeviceCommon interface {
 	FindAll(ctx context.Context, limit int, offset int, search string) (result base.SliceResult[*entities.DeviceGPS])
 	CountCustomer(ctx context.Context, search string) (int, error)
 
-	FindByParams(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.DeviceGPS])
+	FindByParam(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.DeviceGPS])
 }
 type DeviceRepository interface {
 	base.Repository

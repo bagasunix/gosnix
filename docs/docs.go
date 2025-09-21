@@ -18,7 +18,390 @@ const docTemplate = `{
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
-    "paths": {},
+    "paths": {
+        "/customers": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Membuat data customer baru beserta kendaraan opsional",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Membuat customer baru",
+                "parameters": [
+                    {
+                        "description": "Customer Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.CreateCustomer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/responses.CustomerRegisterResponseWrapper"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorBadRequestResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorUnauthorizedResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorConflictResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "requests.CreateCustomer": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "Jl. Merdeka No. 123, Jakarta"
+                },
+                "dob": {
+                    "type": "string",
+                    "example": "1990-01-01"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "demo1@gmail.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "password123"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "081234567890"
+                },
+                "photo": {
+                    "type": "string",
+                    "example": "https://example.com/photo.jpg"
+                },
+                "sex": {
+                    "type": "string",
+                    "example": "1"
+                },
+                "vehicle": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/requests.CreateVehicle"
+                    }
+                }
+            }
+        },
+        "requests.CreateVehicle": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string",
+                    "example": "Toyota"
+                },
+                "category_id": {
+                    "type": "string",
+                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "Hitam"
+                },
+                "device_gps": {
+                    "$ref": "#/definitions/requests.RegistrationGPS"
+                },
+                "fuel_type": {
+                    "type": "string",
+                    "example": "Bensin"
+                },
+                "manufacture_year": {
+                    "type": "integer",
+                    "example": 2020
+                },
+                "max_speed": {
+                    "type": "integer",
+                    "example": 180
+                },
+                "model": {
+                    "type": "string",
+                    "example": "Avanza"
+                },
+                "plate_no": {
+                    "type": "string",
+                    "example": "B 1234 ABC"
+                },
+                "vin": {
+                    "type": "string",
+                    "example": "1HGCM82633A123456"
+                }
+            }
+        },
+        "requests.RegistrationGPS": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string",
+                    "example": "Xiaomi"
+                },
+                "imei": {
+                    "type": "string",
+                    "example": "123456789012345"
+                },
+                "model": {
+                    "type": "string",
+                    "example": "Mi Band 5"
+                },
+                "protocol": {
+                    "type": "string",
+                    "example": "TCP"
+                },
+                "secretKey": {
+                    "type": "string",
+                    "example": "s3cr3tK3y"
+                }
+            }
+        },
+        "responses.CustomerRegisterResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 201
+                },
+                "data": {
+                    "$ref": "#/definitions/responses.CustomerResponse"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Created"
+                }
+            }
+        },
+        "responses.CustomerResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "Jl. Merdeka No. 123, Jakarta"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2023-10-01T12:00:00Z"
+                },
+                "deleted_at": {
+                    "type": "string",
+                    "example": "2023-10-03T12:00:00Z,omitempty"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "demo1@gmail.com"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "is_active": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "+6281234567890"
+                },
+                "photo": {
+                    "type": "string",
+                    "example": "https://example.com/photo.jpg"
+                },
+                "sex": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2023-10-02T12:00:00Z"
+                },
+                "vehicle": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/responses.VehicleResponse"
+                    }
+                }
+            }
+        },
+        "responses.DeviceGPSResponse": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string",
+                    "example": "Garmin"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2023-10-01T10:00:00Z"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                },
+                "imei": {
+                    "type": "string",
+                    "example": "123456789012345"
+                },
+                "installed_at": {
+                    "type": "string",
+                    "example": "2023-10-01T10:00:00Z"
+                },
+                "is_active": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "model": {
+                    "type": "string",
+                    "example": "GLO 2"
+                },
+                "protocol": {
+                    "type": "string",
+                    "example": "NMEA"
+                },
+                "uninstalled_at": {
+                    "type": "string",
+                    "example": "2023-12-01T10:00:00Z"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2023-11-01T10:00:00Z"
+                }
+            }
+        },
+        "responses.ErrorBadRequestResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 400
+                },
+                "error": {
+                    "type": "string",
+                    "example": "invalid request body"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Bad Request"
+                }
+            }
+        },
+        "responses.ErrorConflictResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 409
+                },
+                "error": {
+                    "type": "string",
+                    "example": "duplicate data"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Conflict"
+                }
+            }
+        },
+        "responses.ErrorUnauthorizedResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 401
+                },
+                "error": {
+                    "type": "string",
+                    "example": "missing or invalid token"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Unauthorized"
+                }
+            }
+        },
+        "responses.VehicleResponse": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string",
+                    "example": "Toyota"
+                },
+                "color": {
+                    "type": "string",
+                    "example": "Hitam"
+                },
+                "device": {
+                    "$ref": "#/definitions/responses.DeviceGPSResponse"
+                },
+                "fuel_type": {
+                    "type": "string",
+                    "example": "Bensin"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                },
+                "is_active": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "manufacture_year": {
+                    "type": "integer",
+                    "example": 2020
+                },
+                "max_speed": {
+                    "type": "integer",
+                    "example": 180
+                },
+                "model": {
+                    "type": "string",
+                    "example": "Avanza"
+                },
+                "plate_no": {
+                    "type": "string",
+                    "example": "B 1234 ABC"
+                }
+            }
+        }
+    },
     "securityDefinitions": {
         "BearerAuth": {
             "type": "apiKey",

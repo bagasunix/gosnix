@@ -17,7 +17,8 @@ type CustomerCommon interface {
 	FindAll(ctx context.Context, limit int, offset int, search string) (result base.SliceResult[*entities.Customer])
 	CountCustomer(ctx context.Context, search string) (int, error)
 
-	FindByParams(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.Customer])
+	FindByParam(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.Customer])
+	FindByPhoneOrEmail(ctx context.Context, phone, email string) (result base.SingleResult[*entities.Customer])
 }
 type CustomerRepository interface {
 	base.Repository

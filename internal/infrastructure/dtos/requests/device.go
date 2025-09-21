@@ -19,11 +19,11 @@ type GPSData struct {
 }
 
 type RegistrationGPS struct {
-	IMEI      string `json:"imei"`
-	Brand     string `json:"brand"`
-	Model     string `json:"model"`
-	Protocol  string `json:"protocol"`
-	SecretKey string `bson:"secret_key"`
+	IMEI      string `json:"imei" example:"123456789012345"`
+	Brand     string `json:"brand" example:"Xiaomi"`
+	Model     string `json:"model" example:"Mi Band 5"`
+	Protocol  string `json:"protocol" example:"TCP"`
+	SecretKey string `bson:"secret_key" example:"s3cr3tK3y"`
 }
 
 func (v RegistrationGPS) Validate() error {

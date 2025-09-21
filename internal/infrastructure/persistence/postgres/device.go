@@ -33,7 +33,7 @@ func (g *gormProviderDevice) FindAll(ctx context.Context, limit int, offset int,
 }
 
 // FindByParams implements repository.DeviceRepository.
-func (g *gormProviderDevice) FindByParams(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.DeviceGPS]) {
+func (g *gormProviderDevice) FindByParam(ctx context.Context, params map[string]interface{}) (result base.SingleResult[*entities.DeviceGPS]) {
 	panic("unimplemented")
 }
 
