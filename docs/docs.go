@@ -133,6 +133,55 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/customers/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menampilkan detail customer berdasarkan ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Mendapatkan detail customer",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Customer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.CustomerDetailResponseWrapper"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorBadRequestResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorNotFoundResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -245,6 +294,22 @@ const docTemplate = `{
                 "secretKey": {
                     "type": "string",
                     "example": "s3cr3tK3y"
+                }
+            }
+        },
+        "responses.CustomerDetailResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/responses.CustomerResponse"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Success"
                 }
             }
         },
@@ -414,6 +479,23 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "Conflict"
+                }
+            }
+        },
+        "responses.ErrorNotFoundResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 404
+                },
+                "error": {
+                    "type": "string",
+                    "example": "resource not found"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Not Found"
                 }
             }
         },

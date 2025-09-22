@@ -81,6 +81,17 @@ definitions:
         example: s3cr3tK3y
         type: string
     type: object
+  responses.CustomerDetailResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/responses.CustomerResponse'
+      message:
+        example: Success
+        type: string
+    type: object
   responses.CustomerListResponseWrapper:
     properties:
       code:
@@ -200,6 +211,18 @@ definitions:
         type: string
       message:
         example: Conflict
+        type: string
+    type: object
+  responses.ErrorNotFoundResponse:
+    properties:
+      code:
+        example: 404
+        type: integer
+      error:
+        example: resource not found
+        type: string
+      message:
+        example: Not Found
         type: string
     type: object
   responses.ErrorUnauthorizedResponse:
@@ -330,6 +353,37 @@ paths:
       security:
       - BearerAuth: []
       summary: Membuat customer baru
+      tags:
+      - Customer
+  /customers/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Menampilkan detail customer berdasarkan ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.CustomerDetailResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.ErrorBadRequestResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responses.ErrorNotFoundResponse'
+      security:
+      - BearerAuth: []
+      summary: Mendapatkan detail customer
       tags:
       - Customer
 securityDefinitions:

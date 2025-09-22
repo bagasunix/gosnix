@@ -576,17 +576,16 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 
 	//  Cek Redis dulu
 	resCust := new(responses.CustomerResponse)
-	val, err := c.cache.GetCustomerCache().Get(ctx, paramID)
-	if err == nil {
-		// Cache hit, unmarshal JSON
+	if val, err := c.cache.GetCustomerCache().Get(ctx, paramID); err == nil {
 		if err := json.Unmarshal([]byte(val), &resCust); err == nil {
 			response.Data = &resCust
-			response.Message = "Pelanggan ditemukan"
+			response.Message = "Pelanggan ditemukan (cache)"
 			response.Code = 200
 			return response
 		}
 	}
 
+	//  Ambil dari DB
 	checkCustomer := c.repo.GetCustomer().FindByParam(ctx, map[string]any{"id": paramID})
 	if checkCustomer.Error != nil {
 		response.Code = 404
@@ -606,22 +605,43 @@ func (c *customerService) ViewCustomer(ctx context.Context, request *requests.En
 	if len(checkCustomer.Value.Vehicles) != 0 {
 		resCust.Vehicle = make([]responses.VehicleResponse, 0, len(checkCustomer.Value.Vehicles))
 		for _, v := range checkCustomer.Value.Vehicles {
-			resCust.Vehicle = append(resCust.Vehicle, responses.VehicleResponse{
+			respV := responses.VehicleResponse{
+				ID:              v.ID,
 				Brand:           v.Brand,
 				Color:           v.Color,
+				Category:        v.Category.Name,
 				FuelType:        v.FuelType,
 				MaxSpeed:        v.MaxSpeed,
 				Model:           v.Model,
 				PlateNo:         v.PlateNo,
 				ManufactureYear: v.ManufactureYear,
 				IsActive:        v.IsActive,
-			})
+			}
+
+			for _, vd := range v.Devices {
+				if vd.IsActive == 1 {
+					respV.Device = &responses.DeviceGPSResponse{
+						ID:            vd.Device.ID,
+						IMEI:          vd.Device.IMEI,
+						Brand:         vd.Device.Brand,
+						Model:         vd.Device.Model,
+						Protocol:      vd.Device.Protocol,
+						IsActive:      vd.IsActive,
+						InstalledAt:   vd.StartTime,
+						UninstalledAt: vd.EndTime,
+						CreatedAt:     vd.Device.CreatedAt,
+						UpdatedAt:     vd.UpdatedAt,
+					}
+				}
+			}
+
+			resCust.Vehicle = append(resCust.Vehicle, respV)
 		}
 	}
 
 	// Simpan ke Redis dengan expire 5 menit
 	data, _ := json.Marshal(resCust)
-	if err = c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, data, paramID); err != nil {
+	if err := c.cache.GetCustomerCache().Set(ctx, 5*time.Minute, data, paramID); err != nil {
 		response.Code = 400
 		response.Message = "Gagal menarik data"
 		response.Errors = err.Error()
