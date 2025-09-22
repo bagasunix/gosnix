@@ -10,7 +10,7 @@ type Customer struct {
 	ID           int            `gorm:"primaryKey;autoIncrement"`
 	Name         string         `gorm:"size:255;not null"`
 	Sex          int8           `gorm:"size:1;not null"` // Changed from Sex int to Gender string
-	DOB          *time.Time     `gorm:"type:date"`
+	DOB          *string        `gorm:"type:date"`
 	Email        string         `gorm:"size:255;unique;not null"`
 	Phone        string         `gorm:"size:20;unique;not null"`
 	PasswordHash string         `gorm:"size:255;not null"`

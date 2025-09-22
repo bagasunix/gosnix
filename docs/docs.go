@@ -181,6 +181,62 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Melakukan update customer berdasarkan ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Melakukan update customer",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Customer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Customer Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.UpdateCustomer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/responses.CustomerUpdateResponseWrapper"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorBadRequestResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/responses.ErrorNotFoundResponse"
+                        }
+                    }
+                }
             }
         }
     },
@@ -217,8 +273,8 @@ const docTemplate = `{
                     "example": "https://example.com/photo.jpg"
                 },
                 "sex": {
-                    "type": "string",
-                    "example": "1"
+                    "type": "integer",
+                    "example": 1
                 },
                 "vehicle": {
                     "type": "array",
@@ -297,6 +353,39 @@ const docTemplate = `{
                 }
             }
         },
+        "requests.UpdateCustomer": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "Jl. Merdeka No. 123, Jakarta"
+                },
+                "dob": {
+                    "type": "string",
+                    "example": "1990-01-01"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "demo1@gmail.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "081234567890"
+                },
+                "photo": {
+                    "type": "string",
+                    "example": "https://example.com/photo.jpg"
+                },
+                "sex": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
         "responses.CustomerDetailResponseWrapper": {
             "type": "object",
             "properties": {
@@ -363,6 +452,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2023-10-03T12:00:00Z,omitempty"
                 },
+                "dob": {
+                    "type": "string",
+                    "example": "1990-01-01"
+                },
                 "email": {
                     "type": "string",
                     "example": "demo1@gmail.com"
@@ -400,6 +493,22 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/responses.VehicleResponse"
                     }
+                }
+            }
+        },
+        "responses.CustomerUpdateResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/responses.CustomerResponse"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Success"
                 }
             }
         },

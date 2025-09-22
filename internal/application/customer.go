@@ -62,19 +62,28 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 		return response
 	}
 
-	intSex, _ := strconv.Atoi(request.Sex)
 	// Build customer
-	customerBuild := &entities.Customer{
-		Name:         request.Name,
-		Sex:          int8(intSex),
-		DOB:          request.DOB,
-		Email:        request.Email,
-		Phone:        *phone,
-		PasswordHash: hash.HashAndSalt([]byte(request.Password)), // Pastikan untuk menghash password
-		Address:      request.Address,
-		Photo:        request.Photo,
-		IsActive:     1,
+	customerBuild := new(entities.Customer)
+	customerBuild.Name = request.Name
+	customerBuild.Sex = int8(request.Sex)
+	// parse DOB
+	if request.DOB != nil {
+		// dob, err := time.Parse("2006-01-02", *request.DOB)
+		// if err != nil {
+		// 	response.Code = 400
+		// 	response.Message = "Tanggal lahir tidak valid, gunakan format YYYY-MM-DD"
+		// 	response.Errors = err.Error()
+		// 	return response
+		// }
+		// customerBuild.DOB = &dob
+		customerBuild.DOB = request.DOB
 	}
+	customerBuild.Email = request.Email
+	customerBuild.Phone = *phone
+	customerBuild.PasswordHash = hash.HashAndSalt([]byte(request.Password)) // Pastikan untuk menghash password
+	customerBuild.Address = request.Address
+	customerBuild.Photo = request.Photo
+	customerBuild.IsActive = 1
 
 	tx := c.repo.GetCustomer().GetConnection().(*gorm.DB).Begin()
 
@@ -501,9 +510,31 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 	}
 
 	mCustt := new(entities.Customer)
-	mCustt.Name = request.Name
-	mCustt.Phone = request.Phone
-	mCustt.Address = request.Address
+	// parse DOB
+	if request.DOB != nil {
+		// dob, err := time.Parse("2006-01-02", *request.DOB)
+		// if err != nil {
+		// 	response.Code = 400
+		// 	response.Message = "Tanggal lahir tidak valid, gunakan format YYYY-MM-DD"
+		// 	response.Errors = err.Error()
+		// 	return response
+		// }
+		// mCustt.DOB = &dob
+		mCustt.DOB = request.DOB
+	}
+
+	if request.Name != nil {
+		mCustt.Name = *request.Name
+	}
+	if request.Sex != nil {
+		mCustt.Sex = *request.Sex
+	}
+	if request.Photo != nil {
+		mCustt.Photo = *request.Photo
+	}
+	if request.Address != nil {
+		mCustt.Address = *request.Address
+	}
 
 	// --- Redis key berdasarkan customer ID
 	intCustID, _ := strconv.Atoi(request.ID)
@@ -516,27 +547,50 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 	}
 
 	resCust := new(responses.CustomerResponse)
-	resCust.ID = mCustt.ID
+	resCust.ID = checkCust.Value.ID
 	resCust.Name = mCustt.Name
 	resCust.Sex = mCustt.Sex
-	resCust.Email = mCustt.Email
-	resCust.Phone = mCustt.Phone
+	resCust.DOB = mCustt.DOB
+	resCust.Photo = mCustt.Photo
+	resCust.Email = checkCust.Value.Email
+	resCust.Phone = checkCust.Value.Phone
 	resCust.Address = mCustt.Address
-	resCust.IsActive = mCustt.IsActive
+	resCust.IsActive = checkCust.Value.IsActive
 
 	if len(checkCust.Value.Vehicles) != 0 {
 		resCust.Vehicle = make([]responses.VehicleResponse, 0, len(checkCust.Value.Vehicles))
 		for _, v := range checkCust.Value.Vehicles {
-			resCust.Vehicle = append(resCust.Vehicle, responses.VehicleResponse{
+			resVec := responses.VehicleResponse{
+				ID:              v.ID,
 				Brand:           v.Brand,
 				Color:           v.Color,
+				Category:        v.Category.Name,
 				FuelType:        v.FuelType,
 				MaxSpeed:        v.MaxSpeed,
 				Model:           v.Model,
 				PlateNo:         v.PlateNo,
 				ManufactureYear: v.ManufactureYear,
 				IsActive:        v.IsActive,
-			})
+			}
+
+			for _, vd := range v.Devices {
+				if vd.IsActive == 1 {
+					resVec.Device = &responses.DeviceGPSResponse{
+						ID:            vd.Device.ID,
+						IMEI:          vd.Device.IMEI,
+						Brand:         vd.Device.Brand,
+						Model:         vd.Device.Model,
+						Protocol:      vd.Device.Protocol,
+						IsActive:      vd.IsActive,
+						InstalledAt:   vd.StartTime,
+						UninstalledAt: vd.EndTime,
+						CreatedAt:     vd.Device.CreatedAt,
+						UpdatedAt:     vd.UpdatedAt,
+					}
+					break
+				}
+			}
+			resCust.Vehicle = append(resCust.Vehicle, resVec)
 		}
 	}
 

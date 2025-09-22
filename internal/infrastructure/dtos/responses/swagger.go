@@ -81,6 +81,7 @@ type SuccessNoContentResponse struct {
 type CustomerRegisterResponseWrapper SuccessCreatedResponse[CustomerResponse]
 type CustomerListResponseWrapper SuccessOKResponse[[]CustomerResponse]
 type CustomerDetailResponseWrapper SuccessOKResponse[CustomerResponse]
+type CustomerUpdateResponseWrapper SuccessOKResponse[CustomerResponse]
 
 type VehicleRegisterResponseWrapper SuccessCreatedResponse[VehicleResponse]
 type VehicleListResponseWrapper SuccessOKResponse[[]VehicleResponse]

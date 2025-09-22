@@ -24,8 +24,8 @@ definitions:
         example: https://example.com/photo.jpg
         type: string
       sex:
-        example: "1"
-        type: string
+        example: 1
+        type: integer
       vehicle:
         items:
           $ref: '#/definitions/requests.CreateVehicle'
@@ -81,6 +81,30 @@ definitions:
         example: s3cr3tK3y
         type: string
     type: object
+  requests.UpdateCustomer:
+    properties:
+      address:
+        example: Jl. Merdeka No. 123, Jakarta
+        type: string
+      dob:
+        example: "1990-01-01"
+        type: string
+      email:
+        example: demo1@gmail.com
+        type: string
+      name:
+        example: John Doe
+        type: string
+      phone:
+        example: "081234567890"
+        type: string
+      photo:
+        example: https://example.com/photo.jpg
+        type: string
+      sex:
+        example: 1
+        type: integer
+    type: object
   responses.CustomerDetailResponseWrapper:
     properties:
       code:
@@ -127,6 +151,9 @@ definitions:
       deleted_at:
         example: 2023-10-03T12:00:00Z,omitempty
         type: string
+      dob:
+        example: "1990-01-01"
+        type: string
       email:
         example: demo1@gmail.com
         type: string
@@ -155,6 +182,17 @@ definitions:
         items:
           $ref: '#/definitions/responses.VehicleResponse'
         type: array
+    type: object
+  responses.CustomerUpdateResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/responses.CustomerResponse'
+      message:
+        example: Success
+        type: string
     type: object
   responses.DeviceGPSResponse:
     properties:
@@ -384,6 +422,42 @@ paths:
       security:
       - BearerAuth: []
       summary: Mendapatkan detail customer
+      tags:
+      - Customer
+    put:
+      consumes:
+      - application/json
+      description: Melakukan update customer berdasarkan ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Customer Request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/requests.UpdateCustomer'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.CustomerUpdateResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.ErrorBadRequestResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responses.ErrorNotFoundResponse'
+      security:
+      - BearerAuth: []
+      summary: Melakukan update customer
       tags:
       - Customer
 securityDefinitions:
