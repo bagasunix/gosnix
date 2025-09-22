@@ -165,3 +165,42 @@ func (c *CustomerHandler) UpdateCustomer(ctx *fiber.Ctx) error {
 
 	return ctx.Status(response.Code).JSON(response)
 }
+
+// DeleteCustomer godoc
+// @Summary Melakukan delete customer
+// @Description Melakukan delete customer berdasarkan ID
+// @Tags Customer
+// @Accept  json
+// @Produce  json
+// @Param   id   path int true "Customer ID"
+// @Success 200 {object} responses.CustomerDeleteResponseWrapper
+// @Failure 400 {object} responses.ErrorBadRequestResponse
+// @Failure 404 {object} responses.ErrorNotFoundResponse
+// @Router /customers/{id} [delete]
+// @Security BearerAuth
+func (c *CustomerHandler) DeleteCustomer(ctx *fiber.Ctx) error {
+	request := new(requests.EntityId)
+	var response responses.BaseResponse[any]
+
+	id := ctx.Params("id")
+	if id == "" {
+		response.Code = fiber.StatusBadRequest
+		response.Message = "Invalid request"
+		response.Errors = "ID tidak ditemukan"
+		return ctx.Status(fiber.StatusBadRequest).JSON(response)
+	}
+	if _, err := strconv.Atoi(id); err != nil {
+		response.Code = fiber.StatusBadRequest
+		response.Message = "Invalid request"
+		response.Errors = "ID harus berupa angka"
+		return ctx.Status(response.Code).JSON(response)
+	}
+
+	request.Id = id
+	response = c.service.DeleteCustomer(ctx.Context(), request)
+	if response.Errors != "" {
+		return ctx.Status(response.Code).JSON(response)
+	}
+
+	return ctx.Status(response.Code).JSON(response)
+}

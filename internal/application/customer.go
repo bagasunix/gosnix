@@ -66,16 +66,7 @@ func (c *customerService) Create(ctx context.Context, request *requests.CreateCu
 	customerBuild := new(entities.Customer)
 	customerBuild.Name = request.Name
 	customerBuild.Sex = int8(request.Sex)
-	// parse DOB
 	if request.DOB != nil {
-		// dob, err := time.Parse("2006-01-02", *request.DOB)
-		// if err != nil {
-		// 	response.Code = 400
-		// 	response.Message = "Tanggal lahir tidak valid, gunakan format YYYY-MM-DD"
-		// 	response.Errors = err.Error()
-		// 	return response
-		// }
-		// customerBuild.DOB = &dob
 		customerBuild.DOB = request.DOB
 	}
 	customerBuild.Email = request.Email
@@ -344,6 +335,13 @@ func (c *customerService) DeleteCustomer(ctx context.Context, request *requests.
 		return response
 	}
 
+	if err := c.cache.GetAuthCache().Delete(ctx, "customers", intId); err != nil {
+		response.Code = 400
+		response.Message = "Data gagal dihapus"
+		response.Errors = err.Error()
+		return response
+	}
+
 	// Hapus cache list (opsional, pattern search)
 	if err := c.cache.GetCustomerCache().DeleteByPattern(ctx, "search=*"); err != nil {
 		response.Code = 400
@@ -512,14 +510,6 @@ func (c *customerService) UpdateCustomer(ctx context.Context, request *requests.
 	mCustt := new(entities.Customer)
 	// parse DOB
 	if request.DOB != nil {
-		// dob, err := time.Parse("2006-01-02", *request.DOB)
-		// if err != nil {
-		// 	response.Code = 400
-		// 	response.Message = "Tanggal lahir tidak valid, gunakan format YYYY-MM-DD"
-		// 	response.Errors = err.Error()
-		// 	return response
-		// }
-		// mCustt.DOB = &dob
 		mCustt.DOB = request.DOB
 	}
 

@@ -11,12 +11,19 @@ type RedisClient interface {
 	GetHealth() repository.RedisRepository
 	GetCustomerCache() repository.CustomerCacheRepository
 	GetVehicleCache() repository.VehicleCacheRepository
+	GetAuthCache() repository.TokenCacheRepository
 }
 
 type repo struct {
 	health   repository.RedisRepository
 	customer repository.CustomerCacheRepository
 	vehicle  repository.VehicleCacheRepository
+	auth     repository.TokenCacheRepository
+}
+
+// GetAuthCache implements RedisClient.
+func (r *repo) GetAuthCache() repository.TokenCacheRepository {
+	return r.auth
 }
 
 // GetVehicleCache implements RedisClient.
@@ -39,5 +46,6 @@ func New(logger *log.Logger, redisClient *redis.Client) RedisClient {
 		health:   NewHealthRepo(logger, redisClient),
 		customer: NewCustomerCache(logger, redisClient),
 		vehicle:  NewVehicleCache(logger, redisClient),
+		auth:     NewTokenCache(logger, redisClient),
 	}
 }

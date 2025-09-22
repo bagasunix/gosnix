@@ -65,6 +65,12 @@ type SuccessCreatedResponse[T any] struct {
 	Data    *T     `json:"data"`
 }
 
+// SuccessDeleteResponse biasanya untuk delete
+type SuccessDeleteResponse struct {
+	Code    int    `json:"code" example:"200"`
+	Message string `json:"message" example:"Message deleted successfully"`
+}
+
 // 202 Accepted (async processing)
 type SuccessAcceptedResponse struct {
 	Code    int    `json:"code" example:"202"`
@@ -82,6 +88,7 @@ type CustomerRegisterResponseWrapper SuccessCreatedResponse[CustomerResponse]
 type CustomerListResponseWrapper SuccessOKResponse[[]CustomerResponse]
 type CustomerDetailResponseWrapper SuccessOKResponse[CustomerResponse]
 type CustomerUpdateResponseWrapper SuccessOKResponse[CustomerResponse]
+type CustomerDeleteResponseWrapper SuccessDeleteResponse
 
 type VehicleRegisterResponseWrapper SuccessCreatedResponse[VehicleResponse]
 type VehicleListResponseWrapper SuccessOKResponse[[]VehicleResponse]

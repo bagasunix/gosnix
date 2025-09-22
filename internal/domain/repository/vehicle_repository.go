@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"time"
 
 	"github.com/gofrs/uuid"
 
@@ -22,12 +21,4 @@ type VehicleCommon interface {
 type VehicleRepository interface {
 	base.Repository
 	VehicleCommon
-}
-
-type VehicleCacheRepository interface {
-	Set(ctx context.Context, ttl time.Duration, data any, keys ...any) error
-	Get(ctx context.Context, keys ...any) (result *string, err error)
-	GetCount(ctx context.Context, keys ...any) (result int, err error)
-	Delete(ctx context.Context, keys ...any) error
-	DeleteByPattern(ctx context.Context, pattern string) error
 }

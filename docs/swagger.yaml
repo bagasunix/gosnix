@@ -105,6 +105,15 @@ definitions:
         example: 1
         type: integer
     type: object
+  responses.CustomerDeleteResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      message:
+        example: Message deleted successfully
+        type: string
+    type: object
   responses.CustomerDetailResponseWrapper:
     properties:
       code:
@@ -394,6 +403,36 @@ paths:
       tags:
       - Customer
   /customers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Melakukan delete customer berdasarkan ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.CustomerDeleteResponseWrapper'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/responses.ErrorBadRequestResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/responses.ErrorNotFoundResponse'
+      security:
+      - BearerAuth: []
+      summary: Melakukan delete customer
+      tags:
+      - Customer
     get:
       consumes:
       - application/json
