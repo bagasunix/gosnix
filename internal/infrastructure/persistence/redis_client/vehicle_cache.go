@@ -2,6 +2,7 @@ package redis_client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -12,13 +13,16 @@ import (
 	"github.com/bagasunix/gosnix/pkg/errors"
 )
 
+// vehicleCache adalah implementasi caching vehicle berbasis Redis
 type vehicleCache struct {
 	client *redis.Client
 	logger *log.Logger
 	prefix string
 }
 
-// buildKey implements repository.VehicleCacheRepository.
+// ---------------------------------------------------
+// 🔹 Helper untuk membangun key
+// ---------------------------------------------------
 func (v *vehicleCache) buildKey(parts ...any) string {
 	key := v.prefix
 	for i, p := range parts {
@@ -30,31 +34,42 @@ func (v *vehicleCache) buildKey(parts ...any) string {
 	return key
 }
 
-// Delete implements repository.VehicleCacheRepository.
+// ---------------------------------------------------
+// 🔹 DELETE satu key
+// ---------------------------------------------------
 func (v *vehicleCache) Delete(ctx context.Context, keys ...any) error {
 	cacheKey := v.buildKey(keys...)
-
 	if err := v.client.Del(ctx, cacheKey).Err(); err != nil {
 		return errors.LogAndReturnError(v.logger, err, "failed to delete redis cache", "key", cacheKey)
 	}
 	return nil
 }
 
-// DeleteByPattern implements repository.VehicleCacheRepository.
+// ---------------------------------------------------
+// 🔹 DELETE by pattern (gunakan SCAN + batching)
+// ---------------------------------------------------
 func (v *vehicleCache) DeleteByPattern(ctx context.Context, pattern string) error {
-	iter := v.client.Scan(ctx, 0, pattern, 0).Iterator()
+	iter := v.client.Scan(ctx, 0, pattern, 100).Iterator() // batch 100 key per iterasi
+	pipe := v.client.Pipeline()
+
 	for iter.Next(ctx) {
-		if err := v.client.Del(ctx, iter.Val()).Err(); err != nil {
-			return errors.LogAndReturnError(v.logger, err, "failed to delete by pattern", "pattern", pattern)
-		}
+		pipe.Del(ctx, iter.Val())
 	}
+
+	if _, err := pipe.Exec(ctx); err != nil {
+		return errors.LogAndReturnError(v.logger, err, "failed to delete redis cache by pattern", "pattern", pattern)
+	}
+
 	if err := iter.Err(); err != nil {
 		return errors.LogAndReturnError(v.logger, err, "failed to iterate scan", "pattern", pattern)
 	}
+
 	return nil
 }
 
-// Get implements repository.VehicleCacheRepository.
+// ---------------------------------------------------
+// 🔹 GET (string value)
+// ---------------------------------------------------
 func (v *vehicleCache) Get(ctx context.Context, keys ...any) (result *string, err error) {
 	cacheKey := v.buildKey(keys...)
 
@@ -69,7 +84,9 @@ func (v *vehicleCache) Get(ctx context.Context, keys ...any) (result *string, er
 	return &val, nil
 }
 
-// GetCount implements repository.VehicleCacheRepository.
+// ---------------------------------------------------
+// 🔹 GET Count (int value)
+// ---------------------------------------------------
 func (v *vehicleCache) GetCount(ctx context.Context, keys ...any) (result int, err error) {
 	cacheKey := v.buildKey(keys...)
 
@@ -84,11 +101,26 @@ func (v *vehicleCache) GetCount(ctx context.Context, keys ...any) (result int, e
 	return val, nil
 }
 
-// Set implements repository.VehicleCacheRepository.
+// ---------------------------------------------------
+// 🔹 SET (dengan TTL dan dukungan pipeline)
+// ---------------------------------------------------
 func (v *vehicleCache) Set(ctx context.Context, ttl time.Duration, data any, keys ...any) error {
 	cacheKey := v.buildKey(keys...)
 
-	if err := v.client.Set(ctx, cacheKey, data, ttl).Err(); err != nil {
+	// Jika data bukan string, serialisasi ke JSON
+	var val string
+	switch d := data.(type) {
+	case string:
+		val = d
+	default:
+		b, err := json.Marshal(d)
+		if err != nil {
+			return errors.LogAndReturnError(v.logger, err, "failed to marshal cache data", "key", cacheKey)
+		}
+		val = string(b)
+	}
+
+	if err := v.client.Set(ctx, cacheKey, val, ttl).Err(); err != nil {
 		return errors.LogAndReturnError(v.logger, err, "failed to set redis cache", "key", cacheKey)
 	}
 	return nil

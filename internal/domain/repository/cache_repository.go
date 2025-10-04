@@ -29,4 +29,6 @@ type TokenCacheRepository interface {
 	Set(ctx context.Context, ttl time.Duration, data any, keys ...any) error
 	Get(ctx context.Context, keys ...any) (result string, err error)
 	Delete(ctx context.Context, keys ...any) error
+	GetCount(ctx context.Context, keys ...any) (int, error)
+	DeleteByPattern(ctx context.Context, pattern string) error
 }
