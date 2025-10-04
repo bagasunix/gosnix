@@ -14,27 +14,16 @@ import (
 	"github.com/bagasunix/gosnix/pkg/errors"
 )
 
+// customerCache adalah implementasi caching customer berbasis Redis
 type customerCache struct {
 	client *redis.Client
 	logger *log.Logger
 	prefix string
 }
 
-// DeleteByPattern implements repository.CustomerCacheRepository.
-func (c *customerCache) DeleteByPattern(ctx context.Context, pattern string) error {
-	iter := c.client.Scan(ctx, 0, pattern, 0).Iterator()
-	for iter.Next(ctx) {
-		if err := c.client.Del(ctx, iter.Val()).Err(); err != nil {
-			return errors.LogAndReturnError(c.logger, err, "failed to delete by pattern", "pattern", pattern)
-		}
-	}
-	if err := iter.Err(); err != nil {
-		return errors.LogAndReturnError(c.logger, err, "failed to iterate scan", "pattern", pattern)
-	}
-	return nil
-}
-
-// helper build key
+// ---------------------------------------------------
+// 🔹 Helper untuk membangun key
+// ---------------------------------------------------
 func (c *customerCache) buildKey(parts ...any) string {
 	key := c.prefix
 	for i, p := range parts {
@@ -46,71 +35,118 @@ func (c *customerCache) buildKey(parts ...any) string {
 	return key
 }
 
+// ---------------------------------------------------
+// 🔹 SET (dengan TTL dan dukungan pipeline)
+// ---------------------------------------------------
 func (c *customerCache) Set(ctx context.Context, ttl time.Duration, data any, keys ...any) error {
 	cacheKey := c.buildKey(keys...)
 
-	if err := c.client.Set(ctx, cacheKey, data, ttl).Err(); err != nil {
+	// Jika data bukan string, serialisasi ke JSON
+	var val string
+	switch d := data.(type) {
+	case string:
+		val = d
+	default:
+		b, err := json.Marshal(d)
+		if err != nil {
+			return errors.LogAndReturnError(c.logger, err, "failed to marshal cache data", "key", cacheKey)
+		}
+		val = string(b)
+	}
+
+	if err := c.client.Set(ctx, cacheKey, val, ttl).Err(); err != nil {
 		return errors.LogAndReturnError(c.logger, err, "failed to set redis cache", "key", cacheKey)
 	}
 	return nil
 }
 
-func (c *customerCache) GetCount(ctx context.Context, keys ...any) (result int, err error) {
-	cacheKey := c.buildKey(keys...)
-
-	val, err := c.client.Get(ctx, cacheKey).Int()
-	if err == redis.Nil {
-		// Not found di cache bukan berarti error, return nil
-		return 0, nil
-	} else if err != nil {
-		return 0, errors.LogAndReturnError(c.logger, err, "failed to get redis cache", "key", cacheKey)
-	}
-
-	return val, nil
-}
-
-func (c *customerCache) Get(ctx context.Context, keys ...any) (result string, err error) {
+// ---------------------------------------------------
+// 🔹 GET (string value)
+// ---------------------------------------------------
+func (c *customerCache) Get(ctx context.Context, keys ...any) (string, error) {
 	cacheKey := c.buildKey(keys...)
 
 	val, err := c.client.Get(ctx, cacheKey).Result()
 	if err == redis.Nil {
-		// Not found di cache bukan berarti error, return nil
-		return "", nil
+		return "", nil // tidak ditemukan
 	} else if err != nil {
 		return "", errors.LogAndReturnError(c.logger, err, "failed to get redis cache", "key", cacheKey)
 	}
-
 	return val, nil
 }
 
-func (c *customerCache) GetWithValue(ctx context.Context, keys ...any) (result *entities.Customer, err error) {
+// ---------------------------------------------------
+// 🔹 GET dengan unmarshal ke struct Customer
+// ---------------------------------------------------
+func (c *customerCache) GetWithValue(ctx context.Context, keys ...any) (*entities.Customer, error) {
 	cacheKey := c.buildKey(keys...)
 
 	val, err := c.client.Get(ctx, cacheKey).Result()
 	if err == redis.Nil {
-		// Not found di cache bukan berarti error, return nil
 		return nil, nil
 	} else if err != nil {
 		return nil, errors.LogAndReturnError(c.logger, err, "failed to get redis cache", "key", cacheKey)
 	}
 
+	result := new(entities.Customer)
 	if err := json.Unmarshal([]byte(val), result); err != nil {
-		return nil, errors.LogAndReturnError(c.logger, err, "failed to unmarshal customer from cache", "key", cacheKey)
+		return nil, errors.LogAndReturnError(c.logger, err, "failed to unmarshal customer cache", "key", cacheKey)
 	}
 
 	return result, nil
 }
 
-func (c *customerCache) Delete(ctx context.Context, keys ...any) error {
+// ---------------------------------------------------
+// 🔹 GET Count (int value)
+// ---------------------------------------------------
+func (c *customerCache) GetCount(ctx context.Context, keys ...any) (int, error) {
 	cacheKey := c.buildKey(keys...)
 
+	val, err := c.client.Get(ctx, cacheKey).Int()
+	if err == redis.Nil {
+		return 0, nil
+	} else if err != nil {
+		return 0, errors.LogAndReturnError(c.logger, err, "failed to get redis cache count", "key", cacheKey)
+	}
+	return val, nil
+}
+
+// ---------------------------------------------------
+// 🔹 DELETE satu key
+// ---------------------------------------------------
+func (c *customerCache) Delete(ctx context.Context, keys ...any) error {
+	cacheKey := c.buildKey(keys...)
 	if err := c.client.Del(ctx, cacheKey).Err(); err != nil {
 		return errors.LogAndReturnError(c.logger, err, "failed to delete redis cache", "key", cacheKey)
 	}
 	return nil
 }
 
-// NewCustomerCache dengan prefix custom
+// ---------------------------------------------------
+// 🔹 DELETE by pattern (gunakan SCAN + batching)
+// ---------------------------------------------------
+func (c *customerCache) DeleteByPattern(ctx context.Context, pattern string) error {
+	iter := c.client.Scan(ctx, 0, pattern, 100).Iterator() // batch 100 key per iterasi
+	pipe := c.client.Pipeline()
+
+	for iter.Next(ctx) {
+		pipe.Del(ctx, iter.Val())
+	}
+
+	if _, err := pipe.Exec(ctx); err != nil {
+		return errors.LogAndReturnError(c.logger, err, "failed to delete redis cache by pattern", "pattern", pattern)
+	}
+
+	if err := iter.Err(); err != nil {
+		return errors.LogAndReturnError(c.logger, err, "failed to iterate scan", "pattern", pattern)
+	}
+
+	return nil
+}
+
+// ---------------------------------------------------
+// 🔹 Factory
+// ---------------------------------------------------
 func NewCustomerCache(logger *log.Logger, client *redis.Client) repository.CustomerCacheRepository {
 	return &customerCache{
 		client: client,
