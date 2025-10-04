@@ -73,7 +73,7 @@ type Cfg struct {
 	} `mapstructure:"redis"`
 
 	Logging struct {
-		Level  string `mapstructure:"level"`
+		Level  int    `mapstructure:"level"`
 		Format string `mapstructure:"format"`
 	} `mapstructure:"logging"`
 }

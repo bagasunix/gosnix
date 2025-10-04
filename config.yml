@@ -1,0 +1,47 @@
+app:
+  name: gosnix
+  version: 1.0.0
+  environment: development
+  time_zone: "Asia/Jakarta"
+
+server:
+  port: 8080
+  version: /api/v1
+  rate_limiter:
+    enabled: true
+    limit: 100
+    duration: 1m
+  token:
+    jwt_key: g05n1x!321
+
+database:
+  driver: postgres
+  host: 127.0.0.1
+  port: 5432
+  user: postgres
+  password: postgres
+  dbname: gosnix
+  sslmode: disable
+  max_connection: 300
+  max_idle: 300
+  max_life_time: 5m
+  max_idle_time: 5m
+  migration_path: ./migrations
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: ""
+  db: 1
+  type: token
+
+logging:
+  level: info
+  format: json
+  
+rabbitmq:
+  host: 127.0.0.1
+  port: 5672
+  driver: amqp
+  user: guest
+  password: guest
