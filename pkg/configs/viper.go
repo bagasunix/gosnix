@@ -66,9 +66,11 @@ type Cfg struct {
 
 	Redis struct {
 		Host     string `mapstructure:"host"`
+		Driver   string `mapstructure:"driver"`
 		Port     string `mapstructure:"port"`
+		User     string `mapstructure:"user"`
 		Password string `mapstructure:"password"`
-		DB       int    `mapstructure:"db"`
+		DB       string `mapstructure:"db"`
 		Type     string `mapstructure:"type"`
 	} `mapstructure:"redis"`
 

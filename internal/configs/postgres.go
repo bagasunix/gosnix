@@ -3,7 +3,6 @@ package configs
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -56,6 +55,8 @@ func NewPostgresDB(ctx context.Context, cfg *utils.DBConfig, migrationPath strin
 		SetConnMaxIdleTime(cfg.ConnMaxIdleTime)),
 		"db_resolver")
 
+	logger.Info().Msg("Connected to PostgreSQL")
+
 	sqlDB, _ := db.DB()
 
 	// Jalankan migrasi di fungsi terpisah, path fleksibel
@@ -89,5 +90,5 @@ func runMigrations(sqlDB *sql.DB, migrationsPath string, logger *log.Logger) {
 		errors.HandlerWithOSExit(logger, err, "Failed to run migrations.")
 	}
 
-	fmt.Println("Migration successful")
+	logger.Info().Msg("Migration successful")
 }
