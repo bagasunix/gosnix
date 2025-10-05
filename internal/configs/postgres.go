@@ -22,22 +22,22 @@ import (
 	"github.com/bagasunix/gosnix/pkg/utils"
 )
 
-func InitDB(ctx context.Context, cfg *configs.Cfg, logger *log.Logger) *gorm.DB {
+func InitDBPostgres(ctx context.Context, cfg *configs.Cfg, logger *log.Logger) *gorm.DB {
 	CfgBuild := &utils.DBConfig{
-		Driver:          cfg.Database.Driver,
-		Host:            cfg.Database.Host,
-		Port:            strconv.Itoa(cfg.Database.Port),
-		User:            cfg.Database.User,
-		Password:        cfg.Database.Password,
-		DatabaseName:    cfg.Database.DBName,
-		SSLMode:         cfg.Database.SSLMode,
-		MaxOpenConns:    cfg.Database.MaxConnection,
-		MaxIdleConns:    cfg.Database.MaxIdleConns,
-		ConnMaxLifetime: cfg.Database.MaxLifeTime,
-		ConnMaxIdleTime: cfg.Database.MaxIdleTime,
+		Driver:          cfg.Database.Postgres.Driver,
+		Host:            cfg.Database.Postgres.Host,
+		Port:            strconv.Itoa(cfg.Database.Postgres.Port),
+		User:            cfg.Database.Postgres.User,
+		Password:        cfg.Database.Postgres.Password,
+		DatabaseName:    cfg.Database.Postgres.DBName,
+		SSLMode:         cfg.Database.Postgres.SSLMode,
+		MaxOpenConns:    cfg.Database.Postgres.MaxConnection,
+		MaxIdleConns:    cfg.Database.Postgres.MaxIdleConns,
+		ConnMaxLifetime: cfg.Database.Postgres.MaxLifeTime,
+		ConnMaxIdleTime: cfg.Database.Postgres.MaxIdleTime,
 		Timezone:        cfg.App.TimeZone,
 	}
-	return NewPostgresDB(ctx, CfgBuild, cfg.Database.MigrationPath, logger)
+	return NewPostgresDB(ctx, CfgBuild, cfg.Database.Postgres.MigrationPath, logger)
 }
 
 func NewPostgresDB(ctx context.Context, cfg *utils.DBConfig, migrationPath string, logger *log.Logger) *gorm.DB {

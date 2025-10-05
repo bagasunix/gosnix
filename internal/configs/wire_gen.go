@@ -14,6 +14,7 @@ import (
 	"github.com/phuslu/log"
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"gorm.io/gorm"
 )
 
@@ -27,13 +28,15 @@ import (
 func InitializeConfigs(ctx context.Context) *Configs {
 	cfg := configs.InitConfig(ctx)
 	logger := InitLogger(cfg)
-	db := InitDB(ctx, cfg, logger)
+	db := InitDBPostgres(ctx, cfg, logger)
+	database := InitDBMongo(ctx, cfg, logger)
 	client := InitRedis(ctx, logger, cfg)
 	connection := InitRabbitMQ(ctx, cfg, logger)
 	app := InitFiber(ctx, cfg, client, logger)
 	configsConfigs := &Configs{
 		Cfg:         cfg,
-		DB:          db,
+		DBPostgres:  db,
+		DBMongo:     database,
 		RedisClient: client,
 		RabbitConn:  connection,
 		Logger:      logger,
@@ -47,7 +50,8 @@ func InitializeConfigs(ctx context.Context) *Configs {
 // Container untuk semua configs
 type Configs struct {
 	Cfg         *configs.Cfg
-	DB          *gorm.DB
+	DBPostgres  *gorm.DB
+	DBMongo     *mongo.Database
 	RedisClient *redis.Client
 	RabbitConn  *amqp091.Connection
 	Logger      *log.Logger
@@ -55,7 +59,8 @@ type Configs struct {
 }
 
 var ConfigSet = wire.NewSet(configs.InitConfig, InitLogger,
-	InitDB,
+	InitDBPostgres,
+	InitDBMongo,
 	InitRedis,
 	InitRabbitMQ,
 	InitFiber, wire.Struct(new(Configs), "*"),

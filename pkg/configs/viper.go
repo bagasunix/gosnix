@@ -42,18 +42,32 @@ type Cfg struct {
 	} `mapstructure:"server"`
 
 	Database struct {
-		Driver        string        `mapstructure:"driver"`
-		Host          string        `mapstructure:"host"`
-		Port          int           `mapstructure:"port"`
-		User          string        `mapstructure:"user"`
-		Password      string        `mapstructure:"password"`
-		DBName        string        `mapstructure:"dbname"`
-		SSLMode       string        `mapstructure:"sslmode"`
-		MaxConnection int           `mapstructure:"max_connection"`
-		MaxIdleConns  int           `mapstructure:"max_idle"`
-		MaxLifeTime   time.Duration `mapstructure:"max_life_time"`
-		MaxIdleTime   time.Duration `mapstructure:"max_idle_time"`
-		MigrationPath string        `mapstructure:"migration_path"`
+		Postgres struct {
+			Driver        string        `mapstructure:"driver"`
+			Host          string        `mapstructure:"host"`
+			Port          int           `mapstructure:"port"`
+			User          string        `mapstructure:"user"`
+			Password      string        `mapstructure:"password"`
+			DBName        string        `mapstructure:"dbname"`
+			SSLMode       string        `mapstructure:"sslmode"`
+			MaxConnection int           `mapstructure:"max_connection"`
+			MaxIdleConns  int           `mapstructure:"max_idle"`
+			MaxLifeTime   time.Duration `mapstructure:"max_life_time"`
+			MaxIdleTime   time.Duration `mapstructure:"max_idle_time"`
+			MigrationPath string        `mapstructure:"migration_path"`
+		} `mapstructure:"postgres"`
+		MongoDB struct {
+			Driver      string        `mapstructure:"driver"`
+			Host        string        `mapstructure:"host"`
+			Port        int           `mapstructure:"port"`
+			User        string        `mapstructure:"user"`
+			Password    string        `mapstructure:"password"`
+			DBName      string        `mapstructure:"dbname"`
+			SSLMode     string        `mapstructure:"sslmode"`
+			MaxPoolSize int           `mapstructure:"max_connection"`
+			MinPoolSize int           `mapstructure:"min_idle_size"`
+			MaxIdleTime time.Duration `mapstructure:"max_idle_time"`
+		} `mapstructure:"mongodb"`
 	} `mapstructure:"database"`
 
 	RabbitMQ struct {
@@ -105,8 +119,12 @@ func LoadCfg(ctx context.Context) (*Cfg, error) {
 		return nil, err
 	}
 
-	if config.Database.Driver == "" || config.Database.Host == "" || config.Database.Port == 0 || config.Database.User == "" || config.Database.Password == "" || config.Database.DBName == "" {
-		return nil, errors.CustomError("database configuration is missing")
+	if config.Database.Postgres.Driver == "" || config.Database.Postgres.Host == "" || config.Database.Postgres.Port == 0 || config.Database.Postgres.User == "" || config.Database.Postgres.Password == "" || config.Database.Postgres.DBName == "" {
+		return nil, errors.CustomError("database postgres configuration is missing")
+	}
+
+	if config.Database.MongoDB.Driver == "" || config.Database.MongoDB.Host == "" || config.Database.MongoDB.Port == 0 || config.Database.MongoDB.User == "" || config.Database.MongoDB.Password == "" || config.Database.MongoDB.DBName == "" {
+		return nil, errors.CustomError("database mongo configuration is missing")
 	}
 
 	if config.RabbitMQ.Driver == "" || config.RabbitMQ.Host == "" || config.RabbitMQ.Port == 0 || config.RabbitMQ.User == "" || config.RabbitMQ.Password == "" {

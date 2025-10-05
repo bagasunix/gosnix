@@ -25,7 +25,7 @@ func Run() {
 	defer closeResources(container)
 
 	// Initialize handler & setup routes
-	serviceHandler := application.InitializeServiceHandler(container.DB, container.RedisClient, container.RabbitConn, container.Logger, container.Cfg)
+	serviceHandler := application.InitializeServiceHandler(container.DBPostgres, container.RedisClient, container.RabbitConn, container.Logger, container.Cfg)
 	httpRouter.SetupRoutes(container.FiberApp, container.Cfg, serviceHandler.Health, serviceHandler.Customer)
 
 	// Channel untuk menangani error atau signal
@@ -46,9 +46,9 @@ func Run() {
 // -------------------- Helper Functions --------------------
 
 func closeResources(c *Configs) {
-	// Tutup DB
-	if c.DB != nil {
-		sqlDB, err := c.DB.DB()
+	// Tutup DBPostgres
+	if c.DBPostgres != nil {
+		sqlDB, err := c.DBPostgres.DB()
 		if err == nil && sqlDB != nil {
 			_ = sqlDB.Close()
 		}
