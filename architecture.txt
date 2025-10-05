@@ -1,0 +1,89 @@
+my-app/
+├── cmd/
+│   |── api/
+│   |   └── main.go                            # Entry point aplikasi
+│   └── gps-processor/          # Dedicated service untuk GPS data processing
+│       └── main.go             # Entry point untuk GPS processor
+├── internal/
+│   ├── domain/                                # Logika bisnis inti per modul
+│   │   ├── Entity/                            # Entity dan value objects
+│   │   ├── repository/                        # Interface (contracts)
+│   │   └── service/                           # Interface untuk services/logic contract
+│   │
+│   ├── infrastructure/
+│   |   ├── persistence/                       # Database Adapters
+│   |   │   ├── postgres/                        # Postgres implementation   
+│   │   │   │   ├── vehicle_repo.go
+│   │   │   │   └── gps_repo.go
+│   |   │   └── redis/                           # Redis implementation 
+│   │   │       ├── vehicle_cache.go
+│   │   │       └── live_tracking.go # Cache data real-time
+│   │   ├── messaging/                         # Message Brokers Adapters
+│   │   │   ├── rabbitmq/                        # RabbitMQ Implementation
+│   │   │   │   ├── publisher.go                   # RabbitMQ Publisher
+│   │   │   │   └── consumer.go                    # RabbitMQ Consumer
+│   │   │   └── kafka/                           # Kafka Implementation
+│   │   │       ├── publisher.go                   # Kafka Publisher
+│   │   │       └── consumer.go                    # Kafka Consumer
+│   |   │── http/                              # Http Adapters
+│   │   │   ├── handlers/                        # Grouping handler per modul
+│   │   │   │   ├── health_handler.go
+│   │   │   ├── router/                          # Grouping routing per modul
+│   │   │   │   ├── health_router.go
+│   │   │   └── router.go                        # Main router setup
+│   |   │── dtos/                              # Data Transfer Objects
+│   |   │   ├── requests/                        # for grouping request stuct   
+│   |   │   └── responses/                       # for grouping response struct
+│   │   ├── websocket/                         # Komponen WebSocket
+│   │   │   ├── hub.go                           # Manajemen koneksi
+│   │   │   ├── client.go                        # Representasi klien
+│   │   │   ├── handler.go                       # Handler WebSocket
+│   │   │   └── broadcaster.go                   # Broadcast data GPS
+│   |   |── middlewares/                       # HTTP middlewares
+│   |   |   │── auth.go                          # middlewares auth   
+│   │   |   └── websocket_auth.go                # Auth khusus WebSocket
+│   │   └── telemetry/                         # Monitoring & observability
+│   │       ├── metrics.go                       # Prometheus metrics
+│   │       └── tracing.go                       # OpenTelemetry tracing
+│   │
+│   ├── configs/                               # Configuration
+│   |   │── fiber.go                             # init fiber 
+│   |   │── rabbitmq.go                          # Init rabbitmq connection
+│   |   │── redis.go                             # init redis connection
+│   |   │── database.go                          # init database connection
+│   |   │── viper.go                             # init configuration with viper yml
+│   |   │── wire.go                              # wire config
+│   │   ├── websocket.go                         # Konfig WebSocket
+│   │   ├── gps_processor.go                     # Konfig prosesor GPS
+│   |   └── logger.go                            # Init logger  
+│   │
+│   ├── application/    
+│   |   │── wire.go                              # wire application
+│   |   │── customer_service.go                          # Business logic implementation
+│   |   │── health_service.go                            # Business logic implementation   
+│   │   ├── tracking_service.go                          # Implementasi tracking
+│   │   ├── gps_ingestor.go                              # Ingest data GPS
+│   │   └── live_updater.go                              # Update real-time ke client                       
+│   │
+│   │
+├── pkg/
+│   |── errors/
+│   |   ├── commond.go
+│   |   └── handler.go
+│   |── hash/
+│   |   └── bcrypt.go
+│   |── jwt/
+│   |   ├── claims.go
+│   |   └── token.go
+│   |── utils/
+│   |   └── utils.go
+│   ├── geo/                        # Utilitas geospasial
+│   │   ├── distance.go
+│   │   └── geofence.go
+│   └── websocket/                  # Utilitas WebSocket
+│       ├── auth.go
+│       └── message.go
+├── migrations/                     # Skrip sql untuk deployment/migrasi
+├── test/                           # Test files (integration/e2e)
+├── go.mod
+└── go.sum
